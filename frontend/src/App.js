@@ -10,6 +10,8 @@ import PurchasePage from "./pages/PurchasePage";
 import PaymentPage from './pages/PaymentPage';
 import ProductionPage from "./pages/ProductionPage";
 import ShipmentPage from "./pages/ShipmentPage";
+import PurchaseOrderPage from "./pages/PurchaseOrderPage";
+import RemittancePage from "./pages/RemittancePage";
 
 function App() {
   return (
@@ -27,6 +29,8 @@ function App() {
           <Link to="/payments" style={{ marginLeft: "1rem" }}>입금 관리</Link>
           <Link to="/productions" style={{ marginLeft: "1rem" }}>생산 관리</Link>
           <Link to="/shipments" style={{ marginLeft: "1rem" }}>배송 관리</Link>
+          <Link to="/purchase-orders" style={{ marginLeft: "1rem" }}>발주 관리</Link>
+          <Link to="/remittances" style={{ marginLeft: "1rem" }}>송금 관리</Link>
         </nav>
 
         <Routes>
@@ -40,6 +44,8 @@ function App() {
           <Route path="/payments" element={<PaymentPage />} />
           <Route path="/productions" element={<ProductionPage />} />
           <Route path="/shipments" element={<ShipmentPage />} />
+          <Route path="/purchase-orders" element={<PurchaseOrderPage />} />
+          <Route path="/remittances" element={<RemittancePage />} />
         </Routes>
       </div>
     </Router>

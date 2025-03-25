@@ -1,7 +1,7 @@
 # backend/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import vendors,products , quotations, orders, stock_history, purchases, payments, productions, shipments
+from routers import vendors,products , quotations, orders, stock_history, purchases, payments, productions, shipments, purchase_orders, remittances, product-parts
 from dotenv import load_dotenv
 import asyncio
 import os
@@ -30,6 +30,9 @@ app.include_router(purchases.router)
 app.include_router(payments.router)
 app.include_router(productions.router)
 app.include_router(shipments.router)
+app.include_router(purchase_orders.router)
+app.include_router(remittances.router)
+app.include_router(product_parts.router)
 
 @app.get("/")
 def read_root():
