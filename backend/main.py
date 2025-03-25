@@ -1,7 +1,7 @@
 # backend/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import vendors,products , quotations, orders, stock_history, purchases, payments
+from routers import vendors,products , quotations, orders, stock_history, purchases, payments, productions, shipments
 from dotenv import load_dotenv
 import asyncio
 import os
@@ -20,10 +20,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def read_root():
-    return {"message": "Hello ERP World!"}
-
 # 라우터 등록
 app.include_router(vendors.router)
 app.include_router(products.router)
@@ -32,6 +28,12 @@ app.include_router(orders.router)
 app.include_router(stock_history.router)
 app.include_router(purchases.router)
 app.include_router(payments.router)
+app.include_router(productions.router)
+app.include_router(shipments.router)
+
+@app.get("/")
+def read_root():
+    return {"message": "Hello ERP World!"}
 
 @app.get("/test-email")
 def test_email():
