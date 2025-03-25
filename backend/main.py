@@ -1,7 +1,7 @@
 # backend/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import vendors,products , quotations, orders, stock_history, purchases
+from routers import vendors,products , quotations, orders, stock_history, purchases, payments
 from dotenv import load_dotenv
 import asyncio
 import os
@@ -31,7 +31,7 @@ app.include_router(quotations.router)
 app.include_router(orders.router)
 app.include_router(stock_history.router)
 app.include_router(purchases.router)
-
+app.include_router(payments.router)
 
 @app.get("/test-email")
 def test_email():
