@@ -1,6 +1,6 @@
-// src/pages/QuotationPage.js
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { API_BASE } from "../api/config"; // 경로 주의
 
 function QuotationPage() {
   const [quotations, setQuotations] = useState([]);
@@ -15,14 +15,14 @@ function QuotationPage() {
   }, []);
 
   const fetchQuotations = () => {
-    axios.get("http://127.0.0.1:8000/quotations")
+    axios.get(`${API_BASE}/quotations`)
       .then(res => setQuotations(res.data))
       .catch(err => console.error("불러오기 실패:", err));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios.post("http://127.0.0.1:8000/quotations", newQuotation)
+    axios.post(`${API_BASE}/quotations`, newQuotation)
       .then(() => {
         alert("견적 등록 완료!");
         setNewQuotation({

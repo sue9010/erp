@@ -1,6 +1,6 @@
-// src/pages/ProductPage.js
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { API_BASE } from "../api/config"; // config.js 경로 주의
 
 function ProductPage() {
   const [products, setProducts] = useState([]);
@@ -15,14 +15,14 @@ function ProductPage() {
   }, []);
 
   const fetchProducts = () => {
-    axios.get("http://127.0.0.1:8000/products")
+    axios.get(`${API_BASE}/products`)
       .then((res) => setProducts(res.data))
       .catch((err) => console.error("불러오기 실패:", err));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios.post("http://127.0.0.1:8000/products", {
+    axios.post(`${API_BASE}/products`, {
       ...newProduct,
       price: parseInt(newProduct.price)
     })
@@ -35,7 +35,7 @@ function ProductPage() {
   };
 
   return (
-    <div>
+    <div style={{ padding: "2rem" }}>
       <h1>📦 제품 목록</h1>
       <ul>
         {products.map((p) => (

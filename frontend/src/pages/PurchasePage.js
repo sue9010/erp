@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { API_BASE } from "../api/config"; // 경로에 따라 조정
 
 function PurchasePage() {
   const [products, setProducts] = useState([]);
@@ -10,12 +11,12 @@ function PurchasePage() {
   });
 
   useEffect(() => {
-    axios.get("http://127.0.0.1:8000/products").then(res => setProducts(res.data));
+    axios.get(`${API_BASE}/products`).then(res => setProducts(res.data));
     fetchPurchases();
   }, []);
 
   const fetchPurchases = () => {
-    axios.get("http://127.0.0.1:8000/purchases").then(res => setPurchases(res.data));
+    axios.get(`${API_BASE}/purchases`).then(res => setPurchases(res.data));
   };
 
   const addItem = () => {
@@ -33,7 +34,7 @@ function PurchasePage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios.post("http://127.0.0.1:8000/purchases", newPurchase)
+    axios.post(`${API_BASE}/purchases`, newPurchase)
       .then(() => {
         alert("입고 처리 완료!");
         setNewPurchase({ vendor: "", items: [{ product_name: "", quantity: 1 }] });

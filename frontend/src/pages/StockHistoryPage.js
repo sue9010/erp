@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { API_BASE } from "../api/config"; // 경로에 맞게 조정
 
 function StockHistoryPage() {
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
-    axios.get("http://127.0.0.1:8000/stock_history")
+    axios.get(`${API_BASE}/stock_history`)
       .then(res => setHistory(res.data))
       .catch(err => console.error(err));
   }, []);

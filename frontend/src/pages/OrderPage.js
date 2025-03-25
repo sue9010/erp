@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { API_BASE } from "../api/config"; // config.js 경로에 맞게 조정
 
 function OrderPage() {
   const [products, setProducts] = useState([]);
@@ -10,12 +11,12 @@ function OrderPage() {
   });
 
   useEffect(() => {
-    axios.get("http://127.0.0.1:8000/products").then(res => setProducts(res.data));
+    axios.get(`${API_BASE}/products`).then(res => setProducts(res.data));
     fetchOrders();
   }, []);
 
   const fetchOrders = () => {
-    axios.get("http://127.0.0.1:8000/orders").then(res => setOrders(res.data));
+    axios.get(`${API_BASE}/orders`).then(res => setOrders(res.data));
   };
 
   const addItem = () => {
@@ -33,13 +34,13 @@ function OrderPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios.post("http://127.0.0.1:8000/orders", newOrder)
+    axios.post(`${API_BASE}/orders`, newOrder)
       .then(() => {
         alert("주문 등록 완료!");
         setNewOrder({ customer: "", items: [{ product_name: "", quantity: 1 }] });
         fetchOrders();
       })
-      .catch((err) =>{
+      .catch((err) => {
         if (err.response) {
           alert("❗주문 실패: " + err.response.data.detail);
         } else {

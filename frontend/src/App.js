@@ -7,6 +7,7 @@ import QuotationPage from "./pages/QuotationPage";
 import OrderPage from "./pages/OrderPage";
 import StockHistoryPage from "./pages/StockHistoryPage";
 import PurchasePage from "./pages/PurchasePage";
+import PaymentPage from './pages/PaymentPage';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Link to="/orders" style={{ marginLeft: "1rem" }}>주문 관리</Link>
           <Link to="/stock-history" style={{ marginLeft: "1rem" }}>재고 이력</Link>
           <Link to="/purchases" style={{ marginLeft: "1rem" }}>입고 관리</Link>
+          <Link to="/payments" style={{ marginLeft: "1rem" }}>입금 관리</Link>
         </nav>
 
         <Routes>
@@ -31,6 +33,7 @@ function App() {
           <Route path="/orders" element={<OrderPage />} />
           <Route path="/stock-history" element={<StockHistoryPage />} />
           <Route path="/purchases" element={<PurchasePage />} />
+          <Route path="/payments" element={<PaymentPage />} />
         </Routes>
       </div>
     </Router>
