@@ -39,7 +39,9 @@ function ProductPage() {
       <h1>📦 제품 목록</h1>
       <ul>
         {products.map((p) => (
-          <li key={p.id}>{p.name} / {p.manufacturer} / {p.price.toLocaleString()}원</li>
+          <li key={p.id}>
+            {p.name} / {p.manufacturer} / {p.price.toLocaleString()}원 / 재고: {p.stock ?? 0}개
+          </li>        
         ))}
       </ul>
 

@@ -12,9 +12,10 @@ class Product(BaseModel):
 
 # 메모리 기반 제품 리스트
 products = [
-    {"id": 1, "name": "열화상 카메라 모듈", "manufacturer": "ThermoCorp", "price": 1200000},
-    {"id": 2, "name": "렌즈 키트", "manufacturer": "LensPro", "price": 300000}
+    {"id": 1, "name": "열화상 카메라 모듈", "manufacturer": "ThermoCorp", "price": 1200000, "stock": 100},
+    {"id": 2, "name": "렌즈 키트", "manufacturer": "LensPro", "price": 300000, "stock": 50}
 ]
+
 
 @router.get("/products")
 def get_products():

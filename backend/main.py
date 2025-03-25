@@ -1,7 +1,13 @@
 # backend/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import vendors,products 
+from routers import vendors,products , quotations, orders, stock_history, purchases
+from dotenv import load_dotenv
+import asyncio
+import os
+from utils.email_sender import send_email_with_pdf_sync
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -21,3 +27,18 @@ def read_root():
 # 라우터 등록
 app.include_router(vendors.router)
 app.include_router(products.router)
+app.include_router(quotations.router) 
+app.include_router(orders.router)
+app.include_router(stock_history.router)
+app.include_router(purchases.router)
+
+
+@app.get("/test-email")
+def test_email():
+    send_email_with_pdf_sync(
+        to_email="sue@coxcamera.com",
+        subject="테스트 메일 (smtplib)",
+        body="smtplib 방식으로 보낸 메일입니다.",
+        pdf_path="generated_pdfs/quotation_1.pdf"
+    )
+    return {"message": "📧 동기 방식으로 이메일 전송 시도 완료"}
