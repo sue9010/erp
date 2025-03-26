@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, Form, Button } from 'react-bootstrap';
 import { inputFields } from '../api/config';
+import 'bootstrap/dist/css/bootstrap.min.css'; // Bootstrap 스타일 추가
 
 export const ProductModal = ({ show, handleClose, product, handleSubmit, setProduct }) => {
   const handleChange = (e) => {
@@ -9,11 +10,11 @@ export const ProductModal = ({ show, handleClose, product, handleSubmit, setProd
   };
 
   return (
-    <Modal
-      show={show}
+    <Modal 
+      show={show} 
       onHide={handleClose}
       centered
-      backdrop="static" // 배경 클릭 방지
+      backdrop="static"
       dialogClassName="custom-modal"
     >
       <Modal.Header closeButton>
