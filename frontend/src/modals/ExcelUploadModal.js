@@ -36,7 +36,7 @@ export const ExcelUploadModal = ({ show, handleClose, handleUpload }) => {
             <Form.Label>엑셀 파일 선택</Form.Label>
             <Form.Control
               type="file"
-              accept=".xlsx, .xls"
+              accept=".xlsx, .xls, .csv"
               ref={fileInputRef}
               onChange={handleFileChange}
             />

@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from "react";
 import { Button, ButtonGroup, Form } from "react-bootstrap";
-import { ProductModal } from "../modals/ProductModal";
+import { ProductModal } from "../modals/AddModifyModal";
 import { ExcelUploadModal } from "../modals/ExcelUploadModal";
-import { ProductTable } from "../tables/ProductTable";
+import { DataTable } from "../components/DataTable";
 import { useProductManagement } from "../hooks/useProductManagement";
+import { productConfig } from "../api/config";
 
 function ProductPage() {
   const [showProductModal, setShowProductModal] = useState(false);
@@ -18,8 +19,7 @@ function ProductPage() {
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; 
-  // 한 페이지에 들어가는 아이템 수
+  const itemsPerPage = 20;
 
   const {
     products,
@@ -32,11 +32,10 @@ function ProductPage() {
   } = useProductManagement();
 
   const filteredProducts = useMemo(() => {
-    return products.filter(product =>
-      product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.manufacturer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.note.toLowerCase().includes(searchTerm.toLowerCase())
+    return products.filter((product) =>
+      productConfig.searchFields.some((field) =>
+        product[field].toLowerCase().includes(searchTerm.toLowerCase())
+      )
     );
   }, [products, searchTerm]);
 
@@ -49,14 +48,16 @@ function ProductPage() {
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
   const handleOpenProductModal = (product = null) => {
-    setCurrentProduct(product || {
-      category: "",
-      name: "",
-      manufacturer: "",
-      price: "",
-      stock: "",
-      note: "",
-    });
+    setCurrentProduct(
+      product || {
+        category: "",
+        name: "",
+        manufacturer: "",
+        price: "",
+        stock: "",
+        note: "",
+      }
+    );
     setShowProductModal(true);
   };
 
@@ -66,12 +67,12 @@ function ProductPage() {
 
   return (
     <div>
-      <h2>제품 목록</h2>
-      
+      <h2>{productConfig.title}</h2>
+
       <Form.Group className="mb-3">
         <Form.Control
           type="text"
-          placeholder="검색 (품목명, 제품명, 제조사, 비고)"
+          placeholder={`검색 (${productConfig.searchFields.join(", ")})`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -89,8 +90,9 @@ function ProductPage() {
         </Button>
       </ButtonGroup>
 
-      <ProductTable
-        products={paginatedProducts}
+      <DataTable
+        data={paginatedProducts}
+        config={productConfig}
         onEdit={handleOpenProductModal}
         onDelete={handleDelete}
       />
@@ -119,12 +121,13 @@ function ProductPage() {
         product={currentProduct}
         handleSubmit={handleProductSubmit}
         setProduct={setCurrentProduct}
+        modalType="product"
       />
 
       <ExcelUploadModal
         show={showExcelModal}
         handleClose={() => setShowExcelModal(false)}
-        handleUpload={handleExcelUpload}
+        handleUpload={(file) => handleExcelUpload(file, () => setShowExcelModal(false))}
         uploadError={uploadError}
         fileInputRef={fileInputRef}
       />

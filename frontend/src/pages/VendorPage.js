@@ -1,91 +1,116 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { API_BASE } from "../api/config"; // 경로 확인
+import React, { useState, useMemo } from "react";
+import { Button, ButtonGroup, Form } from "react-bootstrap";
+import { ExcelUploadModal } from "../modals/ExcelUploadModal";
+import { ProductModal } from "../modals/AddModifyModal";
+import { DataTable } from "../components/DataTable";
+import { useVendorManagement } from "../hooks/useVendorManagement";
+import { vendorConfig } from "../api/config";
 
 function VendorPage() {
-  const [vendors, setVendors] = useState([]);
-  const [newVendor, setNewVendor] = useState({ name: "", contact: "" });
-  const [excelFile, setExcelFile] = useState(null);
+  const [showExcelModal, setShowExcelModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [currentVendor, setCurrentVendor] = useState({});
+  const itemsPerPage = 10;
 
-  useEffect(() => {
-    fetchVendors();
-  }, []);
+  const {
+    vendors,
+    handleDeleteVendor,
+    handleVendorSubmit,
+    handleExcelUpload,
+    downloadExcel,
+    uploadError,
+    fileInputRef,
+  } = useVendorManagement();
 
-  const fetchVendors = () => {
-    axios.get(`${API_BASE}/vendors`)
-      .then((res) => setVendors(res.data))
-      .catch((err) => console.error("불러오기 실패:", err));
+  const filteredVendors = useMemo(() => {
+    return vendors.filter((vendor) =>
+      vendorConfig.searchFields.some((field) =>
+        vendor[field].toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+  }, [vendors, searchTerm]);
+
+  const paginatedVendors = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredVendors.slice(startIndex, endIndex);
+  }, [filteredVendors, currentPage]);
+
+  const totalPages = Math.ceil(filteredVendors.length / itemsPerPage);
+
+  const handleOpenProductModal = () => {
+    setCurrentVendor({});
+    setShowProductModal(true);
   };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    axios.post(`${API_BASE}/vendors`, newVendor)
-      .then((res) => {
-        alert("업체 추가 성공!");
-        setNewVendor({ name: "", contact: "" });
-        fetchVendors();
-      })
-      .catch((err) => console.error("등록 실패:", err));
-  };
-
-  const handleExcelUpload = () => {
-    if (!excelFile) {
-      alert("엑셀 파일을 선택해주세요!");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", excelFile);
-
-    axios.post(`${API_BASE}/vendors/upload_excel`, formData, {
-      headers: { "Content-Type": "multipart/form-data" }
-    })
-      .then((res) => {
-        alert(res.data.message);
-        fetchVendors();
-      })
-      .catch((err) => console.error("엑셀 업로드 실패:", err));
-  };
-
+  
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>📋 업체 목록</h1>
-      <ul>
-        {vendors.map((vendor) => (
-          <li key={vendor.id}>
-            {vendor.name} ({vendor.contact})
-          </li>
-        ))}
-      </ul>
+    <div>
+      <h2>{vendorConfig.title}</h2>
 
-      <h2>➕ 업체 등록</h2>
-      <form onSubmit={handleSubmit}>
-        <input
+      <Form.Group className="mb-3">
+        <Form.Control
           type="text"
-          placeholder="업체명"
-          value={newVendor.name}
-          onChange={(e) => setNewVendor({ ...newVendor, name: e.target.value })}
-          required
+          placeholder={`검색 (${vendorConfig.searchFields.join(", ")})`}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <input
-          type="text"
-          placeholder="연락처"
-          value={newVendor.contact}
-          onChange={(e) => setNewVendor({ ...newVendor, contact: e.target.value })}
-          required
-        />
-        <button type="submit">등록</button>
-      </form>
+      </Form.Group>
 
-      <hr />
+      <ButtonGroup>
+        <Button variant="primary" onClick={handleOpenProductModal}>
+          공급업체 등록
+        </Button>
+        <Button variant="secondary" onClick={() => setShowExcelModal(true)}>
+          엑셀로 일괄 등록
+        </Button>
+        <Button variant="success" onClick={() => downloadExcel(filteredVendors)}>
+          엑셀로 다운로드
+        </Button>
+      </ButtonGroup>
 
-      <h2>📂 엑셀로 등록</h2>
-      <input
-        type="file"
-        accept=".xlsx"
-        onChange={(e) => setExcelFile(e.target.files[0])}
+      <DataTable
+        data={paginatedVendors}
+        config={vendorConfig}
+        onEdit={(vendor) => alert(`수정 모달 열기: ${vendor.name}`)}
+        onDelete={handleDeleteVendor}
       />
-      <button onClick={handleExcelUpload}>엑셀 업로드</button>
+
+      <div className="pagination-controls">
+        <Button
+          variant="secondary"
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage(currentPage - 1)}
+        >
+          이전
+        </Button>
+        <span>{currentPage} / {totalPages}</span>
+        <Button
+          variant="secondary"
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage(currentPage + 1)}
+        >
+          다음
+        </Button>
+      </div>
+
+      <ProductModal
+        show={showProductModal}
+        handleClose={() => setShowProductModal(false)}
+        product={currentVendor}
+        handleSubmit={handleVendorSubmit}
+        setProduct={setCurrentVendor}
+        modalType="vendor"
+      />
+
+      <ExcelUploadModal
+        show={showExcelModal}
+        handleClose={() => setShowExcelModal(false)}
+        handleUpload={(file) => handleExcelUpload(file, () => setShowExcelModal(false))}
+        uploadError={uploadError}
+        fileInputRef={fileInputRef}
+      />
     </div>
   );
 }

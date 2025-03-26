@@ -21,3 +21,34 @@ export const columns = [
   { key: 'edit', header: '수정', align: 'center' },
   { key: 'delete', header: '삭제', align: 'center' }
 ];
+
+export const productConfig = {
+  title: "제품 목록",
+  fields: [
+    { key: 'category', label: '품목명' },
+    { key: 'name', label: '제품명' },
+    { key: 'manufacturer', label: '제조사' },
+    { key: 'price', label: '가격' },
+    { key: 'stock', label: '재고' },
+    { key: 'note', label: '비고' }
+  ],
+  searchFields: ['category', 'name', 'manufacturer', 'note']
+};
+
+export const vendorConfig = {
+  title: "공급업체 목록",
+  fields: [
+    { key: 'name', label: '이름', required: true },
+    { key: 'contact', label: '연락처', required: true },
+    { key: 'address', label: '주소', required: true },
+    { key: 'note', label: '비고', required: false }
+  ],
+  searchFields: ['name', 'contact', 'address', 'note'],
+  excelTemplate: {
+    headers: ["이름", "연락처", "주소", "비고"],
+    sampleData: [
+      ["공급업체 A", "010-1234-5678", "서울시 강남구", "우수 공급업체"],
+      ["공급업체 B", "010-9876-5432", "부산시 해운대구", ""]
+    ]
+  }
+};
