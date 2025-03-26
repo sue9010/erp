@@ -38,17 +38,19 @@ export const productConfig = {
 export const vendorConfig = {
   title: "공급업체 목록",
   fields: [
-    { key: 'name', label: '이름', required: true },
+    { key: 'company_name', label: '업체명', required: true },
+    { key: 'contact_person', label: '담당자명', required: true },
     { key: 'contact', label: '연락처', required: true },
+    { key: 'country', label: '국가', required: true },
     { key: 'address', label: '주소', required: true },
     { key: 'note', label: '비고', required: false }
   ],
-  searchFields: ['name', 'contact', 'address', 'note'],
+  searchFields: ['company_name', 'contact_person','contact','country', 'address', 'note'],
   excelTemplate: {
-    headers: ["이름", "연락처", "주소", "비고"],
+    headers: ["업체명","담당자명", "연락처","국가", "주소", "비고"],
     sampleData: [
-      ["공급업체 A", "010-1234-5678", "서울시 강남구", "우수 공급업체"],
-      ["공급업체 B", "010-9876-5432", "부산시 해운대구", ""]
+      ["공급업체 A","David", "010-1234-5678","대한민국", "서울시 강남구", "우수 공급업체"],
+      ["공급업체 B", "Kim","010-9876-5432","미국", "부산시 해운대구", ""]
     ]
   }
 };

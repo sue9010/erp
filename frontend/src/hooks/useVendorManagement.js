@@ -3,7 +3,6 @@ import axios from "axios";
 import { API_BASE } from "../api/config";
 import * as XLSX from "xlsx";
 import readXlsxFile from 'read-excel-file';
-import {vendorConfig} from "../api/config";
 
 
 export const useVendorManagement = () => {
@@ -47,15 +46,17 @@ export const useVendorManagement = () => {
         await axios.post(`${API_BASE}/vendors`, vendor);
         alert("공급업체가 추가되었습니다.");
       }
-      fetchVendors();
+      await fetchVendors(); // 목록 새로고침
       if (typeof closeModalCallback === "function") {
-        closeModalCallback();
+        closeModalCallback(); // 모달 닫기
       }
     } catch (error) {
       console.error(isEditing ? "공급업체 수정 실패:" : "공급업체 등록 실패:", error);
       alert("공급업체 등록/수정에 실패했습니다.");
     }
   };
+  
+  
 
   const handleExcelUpload = async (file, closeModalCallback) => {
     if (!file) {

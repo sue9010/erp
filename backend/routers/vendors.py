@@ -5,17 +5,20 @@ from typing import List
 router = APIRouter()
 
 class Vendor(BaseModel):
-    name: str
+    company_name: str
+    contact_person: str
     contact: str
+    country: str
     address: str
     note: str
+
 
 class BulkVendorCreate(BaseModel):
     vendors: List[Vendor]
 
 vendors = [
-    {"id": 1, "name": "Vendor A", "contact": "010-1234-5678", "address": "서울시 강남구", "note": "우수 공급업체"},
-    {"id": 2, "name": "Vendor B", "contact": "010-9876-5432", "address": "부산시 해운대구", "note": "신규 공급업체"}
+    {"id": 1, "company_name":"COX","contact_person": "David", "contact": "010-1234-5678", "country":"대한민국","address": "서울시 강남구", "note": "우수 공급업체"},
+
 ]
 
 def get_max_id():

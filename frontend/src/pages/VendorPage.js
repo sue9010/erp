@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Button, ButtonGroup, Form } from "react-bootstrap";
 import { ExcelUploadModal } from "../modals/ExcelUploadModal";
-import { ProductModal } from "../modals/AddModifyModal";
+import { AddModifyModal } from "../modals/AddModifyModal";
 import { DataTable } from "../components/DataTable";
 import { useVendorManagement } from "../hooks/useVendorManagement";
 import { vendorConfig } from "../api/config";
@@ -10,7 +10,7 @@ function VendorPage() {
   const [showExcelModal, setShowExcelModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [showProductModal, setShowProductModal] = useState(false);
+  const [showAddModifyModal, setShowAddModifyModal] = useState(false);
   const [currentVendor, setCurrentVendor] = useState({});
   const itemsPerPage = 10;
 
@@ -27,10 +27,11 @@ function VendorPage() {
   const filteredVendors = useMemo(() => {
     return vendors.filter((vendor) =>
       vendorConfig.searchFields.some((field) =>
-        vendor[field].toLowerCase().includes(searchTerm.toLowerCase())
+        vendor[field]?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
   }, [vendors, searchTerm]);
+ 
 
   const paginatedVendors = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -40,11 +41,17 @@ function VendorPage() {
 
   const totalPages = Math.ceil(filteredVendors.length / itemsPerPage);
 
-  const handleOpenProductModal = () => {
+  const handleOpenAddModifyModal = () => {
     setCurrentVendor({});
-    setShowProductModal(true);
+    setShowAddModifyModal(true);
   };
   
+  const handleOpenEditModal = (vendor) => {
+    setCurrentVendor(vendor);
+    setShowAddModifyModal(true);
+  };
+  
+
   return (
     <div>
       <h2>{vendorConfig.title}</h2>
@@ -59,7 +66,7 @@ function VendorPage() {
       </Form.Group>
 
       <ButtonGroup>
-        <Button variant="primary" onClick={handleOpenProductModal}>
+        <Button variant="primary" onClick={handleOpenAddModifyModal}>
           공급업체 등록
         </Button>
         <Button variant="secondary" onClick={() => setShowExcelModal(true)}>
@@ -73,7 +80,7 @@ function VendorPage() {
       <DataTable
         data={paginatedVendors}
         config={vendorConfig}
-        onEdit={(vendor) => alert(`수정 모달 열기: ${vendor.name}`)}
+        onEdit={handleOpenEditModal}
         onDelete={handleDeleteVendor}
       />
 
@@ -95,14 +102,15 @@ function VendorPage() {
         </Button>
       </div>
 
-      <ProductModal
-        show={showProductModal}
-        handleClose={() => setShowProductModal(false)}
+      <AddModifyModal
+        show={showAddModifyModal}
+        handleClose={() => setShowAddModifyModal(false)}
         product={currentVendor}
-        handleSubmit={handleVendorSubmit}
+        handleSubmit={(vendor) => handleVendorSubmit(vendor, () => setShowAddModifyModal(false))}
         setProduct={setCurrentVendor}
         modalType="vendor"
       />
+
 
       <ExcelUploadModal
         show={showExcelModal}

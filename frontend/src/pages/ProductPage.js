@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from "react";
 import { Button, ButtonGroup, Form } from "react-bootstrap";
-import { ProductModal } from "../modals/AddModifyModal";
+import { AddModifyModal } from "../modals/AddModifyModal";
 import { ExcelUploadModal } from "../modals/ExcelUploadModal";
 import { DataTable } from "../components/DataTable";
 import { useProductManagement } from "../hooks/useProductManagement";
 import { productConfig } from "../api/config";
 
 function ProductPage() {
-  const [showProductModal, setShowProductModal] = useState(false);
+  const [showAddModifyModal, setShowAddModifyModal] = useState(false);
   const [showExcelModal, setShowExcelModal] = useState(false);
   const [currentProduct, setCurrentProduct] = useState({
     category: "",
@@ -47,7 +47,7 @@ function ProductPage() {
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
-  const handleOpenProductModal = (product = null) => {
+  const handleOpenAddModifyModal = (product = null) => {
     setCurrentProduct(
       product || {
         category: "",
@@ -58,11 +58,11 @@ function ProductPage() {
         note: "",
       }
     );
-    setShowProductModal(true);
+    setShowAddModifyModal(true);
   };
 
-  const handleCloseProductModal = () => {
-    setShowProductModal(false);
+  const handleCloseAddModifyModal = () => {
+    setShowAddModifyModal(false);
   };
 
   return (
@@ -79,7 +79,7 @@ function ProductPage() {
       </Form.Group>
 
       <ButtonGroup>
-        <Button variant="primary" onClick={() => handleOpenProductModal()}>
+        <Button variant="primary" onClick={() => handleOpenAddModifyModal()}>
           제품 등록
         </Button>
         <Button variant="secondary" onClick={() => setShowExcelModal(true)}>
@@ -93,7 +93,7 @@ function ProductPage() {
       <DataTable
         data={paginatedProducts}
         config={productConfig}
-        onEdit={handleOpenProductModal}
+        onEdit={handleOpenAddModifyModal}
         onDelete={handleDelete}
       />
 
@@ -115,9 +115,9 @@ function ProductPage() {
         </Button>
       </div>
 
-      <ProductModal
-        show={showProductModal}
-        handleClose={handleCloseProductModal}
+      <AddModifyModal
+        show={showAddModifyModal}
+        handleClose={handleCloseAddModifyModal}
         product={currentProduct}
         handleSubmit={handleProductSubmit}
         setProduct={setCurrentProduct}
