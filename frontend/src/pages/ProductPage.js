@@ -17,6 +17,9 @@ function ProductPage() {
     note: "",
   });
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; 
+  // 한 페이지에 들어가는 아이템 수
 
   const {
     products,
@@ -25,6 +28,7 @@ function ProductPage() {
     handleExcelUpload,
     uploadError,
     fileInputRef,
+    downloadExcel,
   } = useProductManagement();
 
   const filteredProducts = useMemo(() => {
@@ -35,6 +39,14 @@ function ProductPage() {
       product.note.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [products, searchTerm]);
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredProducts.slice(startIndex, endIndex);
+  }, [filteredProducts, currentPage]);
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
   const handleOpenProductModal = (product = null) => {
     setCurrentProduct(product || {
@@ -54,7 +66,7 @@ function ProductPage() {
 
   return (
     <div>
-      <h2>📦 제품 목록</h2>
+      <h2>제품 목록</h2>
       
       <Form.Group className="mb-3">
         <Form.Control
@@ -72,13 +84,34 @@ function ProductPage() {
         <Button variant="secondary" onClick={() => setShowExcelModal(true)}>
           엑셀로 일괄 등록
         </Button>
+        <Button variant="success" onClick={() => downloadExcel(filteredProducts)}>
+          엑셀로 다운로드
+        </Button>
       </ButtonGroup>
 
       <ProductTable
-        products={filteredProducts}
+        products={paginatedProducts}
         onEdit={handleOpenProductModal}
         onDelete={handleDelete}
       />
+
+      <div className="pagination-controls">
+        <Button
+          variant="secondary"
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage(currentPage - 1)}
+        >
+          이전
+        </Button>
+        <span>{currentPage} / {totalPages}</span>
+        <Button
+          variant="secondary"
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage(currentPage + 1)}
+        >
+          다음
+        </Button>
+      </div>
 
       <ProductModal
         show={showProductModal}

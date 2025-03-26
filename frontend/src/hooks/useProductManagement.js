@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { API_BASE } from "../api/config";
 import readXlsxFile from "read-excel-file";
+import * as XLSX from 'xlsx';
 
 export const useProductManagement = () => {
   const [products, setProducts] = useState([]);
@@ -58,6 +59,13 @@ export const useProductManagement = () => {
     }
   };
 
+  const downloadExcel = (products) => {
+    const worksheet = XLSX.utils.json_to_sheet(products);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
+    XLSX.writeFile(workbook, "products.xlsx");
+  };
+
   const handleExcelUpload = async (file, closeModalCallback) => {
     if (!file) {
       setUploadError("파일을 선택해주세요.");
@@ -99,6 +107,7 @@ export const useProductManagement = () => {
     handleDelete,
     handleProductSubmit,
     handleExcelUpload,
+    downloadExcel,
     uploadError,
     fileInputRef,
   };
