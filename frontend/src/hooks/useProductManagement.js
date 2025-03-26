@@ -29,32 +29,36 @@ export const useProductManagement = () => {
         fetchProducts();
       } catch (error) {
         console.error("제품 삭제 실패:", error);
+        alert("제품 삭제에 실패했습니다.");
       }
     }
   };
 
-  const handleProductSubmit = async (product, closeModal) => {
+  const handleProductSubmit = async (product, closeModalCallback) => {
     const isEditing = !!product.id;
     try {
       if (isEditing) {
         await axios.put(`${API_BASE}/products/${product.id}`, product);
         alert("제품이 수정되었습니다.");
       } else {
-        await axios.post(`${API_BASE}/products`, {
-          ...product,
-          price: parseInt(product.price),
-          stock: parseInt(product.stock),
-        });
+        await axios.post(`${API_BASE}/products`, product);
         alert("제품이 추가되었습니다.");
       }
       fetchProducts();
-      closeModal();
+      if (typeof closeModalCallback === 'function') {
+        closeModalCallback();
+      }
     } catch (error) {
       console.error(isEditing ? "제품 수정 실패:" : "제품 등록 실패:", error);
+      if (error.response && error.response.status === 400) {
+        alert(error.response.data.detail);
+      } else {
+        alert(isEditing ? "제품 수정에 실패했습니다." : "제품 등록에 실패했습니다.");
+      }
     }
   };
 
-  const handleExcelUpload = async (file, closeModal) => {
+  const handleExcelUpload = async (file, closeModalCallback) => {
     if (!file) {
       setUploadError("파일을 선택해주세요.");
       return;
@@ -70,14 +74,22 @@ export const useProductManagement = () => {
         stock: parseInt(row[4]),
         note: row[5] || "",
       }));
-      await axios.post(`${API_BASE}/products/bulk`, { products });
-      alert("제품 일괄 추가 완료!");
+
+      const response = await axios.post(`${API_BASE}/products/bulk`, { products });
+      alert(response.data.message);
       setUploadError("");
       fetchProducts();
-      closeModal();
+      if (typeof closeModalCallback === 'function') {
+        closeModalCallback();
+      }
     } catch (error) {
       console.error("엑셀 파일 처리 오류:", error);
-      setUploadError("엑셀 파일 처리 중 오류가 발생했습니다. 파일 형식을 확인해주세요.");
+      if (error.response && error.response.data.detail) {
+        setUploadError(error.response.data.detail.message);
+        console.error("중복 제품:", error.response.data.detail.errors);
+      } else {
+        setUploadError("엑셀 파일 처리 중 오류가 발생했습니다. 파일 형식을 확인해주세요.");
+      }
     }
   };
 

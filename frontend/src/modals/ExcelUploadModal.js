@@ -1,5 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
 
 export const ExcelUploadModal = ({ show, handleClose, handleUpload }) => {
   const fileInputRef = useRef(null);
@@ -9,13 +11,18 @@ export const ExcelUploadModal = ({ show, handleClose, handleUpload }) => {
     setUploadError("");
   };
 
-  const handleFileUpload = () => {
+  const handleFileUpload = async () => {
     const file = fileInputRef.current.files[0];
     if (!file) {
       setUploadError("파일을 선택해주세요.");
       return;
     }
-    handleUpload(file, handleClose);
+    try {
+      await handleUpload(file);
+      handleClose();
+    } catch (error) {
+      setUploadError(error.message);
+    }
   };
 
   return (
@@ -33,7 +40,7 @@ export const ExcelUploadModal = ({ show, handleClose, handleUpload }) => {
               ref={fileInputRef}
               onChange={handleFileChange}
             />
-            {uploadError && <div style={{ color: 'red', marginTop: '10px' }}>{uploadError}</div>}
+            {uploadError && <div className="text-danger mt-2">{uploadError}</div>}
           </Form.Group>
         </Form>
       </Modal.Body>
