@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Button, ButtonGroup } from "react-bootstrap";
+import React, { useState, useMemo } from "react";
+import { Button, ButtonGroup, Form } from "react-bootstrap";
 import { ProductModal } from "../modals/ProductModal";
 import { ExcelUploadModal } from "../modals/ExcelUploadModal";
 import { ProductTable } from "../tables/ProductTable";
@@ -16,6 +16,7 @@ function ProductPage() {
     stock: "",
     note: "",
   });
+  const [searchTerm, setSearchTerm] = useState("");
 
   const {
     products,
@@ -25,6 +26,15 @@ function ProductPage() {
     uploadError,
     fileInputRef,
   } = useProductManagement();
+
+  const filteredProducts = useMemo(() => {
+    return products.filter(product =>
+      product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.manufacturer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.note.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [products, searchTerm]);
 
   const handleOpenProductModal = (product = null) => {
     setCurrentProduct(product || {
@@ -46,6 +56,15 @@ function ProductPage() {
     <div>
       <h2>📦 제품 목록</h2>
       
+      <Form.Group className="mb-3">
+        <Form.Control
+          type="text"
+          placeholder="검색 (품목명, 제품명, 제조사, 비고)"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </Form.Group>
+
       <ButtonGroup>
         <Button variant="primary" onClick={() => handleOpenProductModal()}>
           제품 등록
@@ -54,9 +73,9 @@ function ProductPage() {
           엑셀로 일괄 등록
         </Button>
       </ButtonGroup>
-      <div><br/></div>
+
       <ProductTable
-        products={products}
+        products={filteredProducts}
         onEdit={handleOpenProductModal}
         onDelete={handleDelete}
       />
@@ -65,10 +84,7 @@ function ProductPage() {
         show={showProductModal}
         handleClose={handleCloseProductModal}
         product={currentProduct}
-        handleSubmit={(product) => {
-          handleProductSubmit(product);
-          handleCloseProductModal();
-        }}
+        handleSubmit={handleProductSubmit}
         setProduct={setCurrentProduct}
       />
 
