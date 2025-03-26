@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Button, ButtonGroup } from 'react-bootstrap';
-import { ProductModal } from '../modals/ProductModal';
-import { ExcelUploadModal } from '../modals/ExcelUploadModal';
-import { ProductTable } from '../tables/ProductTable';
-import { useProductManagement } from '../hooks/useProductManagement';
+import { Button, ButtonGroup } from "react-bootstrap";
+import { ProductModal } from "../modals/ProductModal";
+import { ExcelUploadModal } from "../modals/ExcelUploadModal";
+import { ProductTable } from "../tables/ProductTable";
+import { useProductManagement } from "../hooks/useProductManagement";
 
 function ProductPage() {
   const [showProductModal, setShowProductModal] = useState(false);
@@ -17,7 +17,14 @@ function ProductPage() {
     note: "",
   });
 
-  const { products, handleDelete, handleProductSubmit } = useProductManagement();
+  const {
+    products,
+    handleDelete,
+    handleProductSubmit,
+    handleExcelUpload,
+    uploadError,
+    fileInputRef,
+  } = useProductManagement();
 
   const handleOpenProductModal = (product = null) => {
     setCurrentProduct(product || {
@@ -47,26 +54,30 @@ function ProductPage() {
           엑셀로 일괄 등록
         </Button>
       </ButtonGroup>
-
+      <div><br/></div>
       <ProductTable
         products={products}
         onEdit={handleOpenProductModal}
         onDelete={handleDelete}
       />
 
-      {/* 제품 등록/수정 모달 */}
       <ProductModal
         show={showProductModal}
         handleClose={handleCloseProductModal}
         product={currentProduct}
-        handleSubmit={handleProductSubmit}
+        handleSubmit={(product) => {
+          handleProductSubmit(product);
+          handleCloseProductModal();
+        }}
         setProduct={setCurrentProduct}
       />
 
-      {/* 엑셀 업로드 모달 */}
       <ExcelUploadModal
         show={showExcelModal}
         handleClose={() => setShowExcelModal(false)}
+        handleUpload={handleExcelUpload}
+        uploadError={uploadError}
+        fileInputRef={fileInputRef}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, Form, Button } from 'react-bootstrap';
 import { inputFields } from '../api/config';
-import 'bootstrap/dist/css/bootstrap.min.css'; // Bootstrap 스타일 추가
+import 'bootstrap/dist/css/bootstrap.min.css'; 
 
 export const ProductModal = ({ show, handleClose, product, handleSubmit, setProduct }) => {
   const handleChange = (e) => {
