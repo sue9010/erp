@@ -10,15 +10,13 @@ class Vendor(BaseModel):
     contact: str
     country: str
     address: str
-    note: str
-
+    note: str = ""  # 기본값 설정
 
 class BulkVendorCreate(BaseModel):
     vendors: List[Vendor]
 
 vendors = [
     {"id": 1, "company_name":"COX","contact_person": "David", "contact": "010-1234-5678", "country":"대한민국","address": "서울시 강남구", "note": "우수 공급업체"},
-
 ]
 
 def get_max_id():
@@ -30,31 +28,14 @@ def get_vendors():
 
 @router.post("/vendors")
 def add_vendor(vendor: Vendor):
-    if any(v["name"] == vendor.name for v in vendors):
+    # ✅ company_name 기준 중복 체크
+    if any(v["company_name"] == vendor.company_name for v in vendors):
         raise HTTPException(status_code=400, detail="중복된 공급업체 이름이 존재합니다")
     
     new_id = get_max_id() + 1
     new_vendor = {"id": new_id, **vendor.dict()}
     vendors.append(new_vendor)
     return {"message": "공급업체가 추가되었습니다", "vendor": new_vendor}
-
-@router.put("/vendors/{vendor_id}")
-def update_vendor(vendor_id: int, vendor: Vendor):
-    for i, v in enumerate(vendors):
-        if v["id"] == vendor_id:
-            vendors[i] = {**v, **vendor.dict(), "id": vendor_id}
-            return {"message": "공급업체가 수정되었습니다"}
-    raise HTTPException(status_code=404, detail="공급업체를 찾을 수 없습니다")
-
-@router.delete("/vendors/{vendor_id}")
-def delete_vendor(vendor_id: int):
-    global vendors
-    initial_length = len(vendors)
-    vendors = [v for v in vendors if v["id"] != vendor_id]
-    
-    if len(vendors) == initial_length:
-        raise HTTPException(status_code=404, detail="공급업체를 찾을 수 없습니다")
-    return {"message": "공급업체가 삭제되었습니다"}
 
 @router.post("/vendors/bulk")
 def add_bulk_vendors(bulk_vendor: BulkVendorCreate):
@@ -63,8 +44,9 @@ def add_bulk_vendors(bulk_vendor: BulkVendorCreate):
     errors = []
 
     for idx, vendor in enumerate(bulk_vendor.vendors):
-        if any(v["name"] == vendor.name for v in vendors):
-            errors.append(f"공급업체 이름 '{vendor.name}'이(가) 중복됩니다.")
+        # ✅ company_name 필드 사용
+        if any(v["company_name"] == vendor.company_name for v in vendors):
+            errors.append(f"공급업체 이름 '{vendor.company_name}'이(가) 중복됩니다.")
             continue
 
         new_id = current_max_id + idx + 1
@@ -77,3 +59,13 @@ def add_bulk_vendors(bulk_vendor: BulkVendorCreate):
         return {"message": "일부 공급업체 추가 실패", "errors": errors, "added": len(new_vendors)}
 
     return {"message": f"{len(new_vendors)}개의 공급업체가 추가되었습니다", "added": len(new_vendors)}
+
+@router.delete("/vendors/{vendor_id}")
+def delete_vendor(vendor_id: int):
+    global vendors
+    initial_length = len(vendors)
+    vendors = [v for v in vendors if v["id"] != vendor_id]
+    
+    if len(vendors) == initial_length:
+        raise HTTPException(status_code=404, detail="공급업체를 찾을 수 없습니다")
+    return {"message": "공급업체가 삭제되었습니다"}
