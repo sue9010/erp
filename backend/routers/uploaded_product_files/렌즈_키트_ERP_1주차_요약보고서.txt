@@ -1,0 +1,91 @@
+📘 ERP 개발 1주차 요약 보고서
+===========================
+
+🗓 진행 기간: Week 1 (5일 기준)
+
+---
+
+✅ 전체 목표:
+- FastAPI와 React를 기반으로 ERP 시스템 초기 구조 설계 및 구현
+- 업체/제품 관리 기능 완성
+- 프론트엔드와 백엔드 통신 구조 이해
+- 엑셀 업로드 등 실무형 기능 체험
+
+---
+
+📌 Day 1: 개발 환경 세팅
+------------------------
+- Python 설치 및 가상환경(venv) 구성
+- FastAPI 설치 및 Hello World API 작성
+- React 프로젝트 생성 (`npx create-react-app`)
+- 브라우저에서 API, React 앱 동작 확인
+
+---
+
+📌 Day 2: 업체 목록 조회
+--------------------------
+- FastAPI: `/vendors` GET API 구현
+- React: `axios`로 API 호출 → 화면에 업체 목록 출력
+- React Router는 아직 없이 단일 화면 구성
+
+---
+
+📌 Day 3: 업체 등록 (POST)
+----------------------------
+- FastAPI: `/vendors` POST API 구현 (Pydantic + 메모리 저장)
+- React: 업체 등록 폼 추가, 입력값 → 서버 전송 → 목록 갱신
+- 앱 구조 개선: 기능 분리(`VendorPage.js`)
+
+---
+
+📌 Day 4: 제품 관리
+---------------------
+- FastAPI: `/products` GET/POST API 구현
+- React: `ProductPage.js` 구성 (목록 + 등록 폼)
+- App.js 라우터에 제품 페이지 메뉴 추가
+
+---
+
+📌 Day 5: 엑셀 업로드
+----------------------
+- FastAPI: `/vendors/upload_excel` API 구현
+  - 엑셀 업로드 → `pandas`로 파싱 → 업체 리스트에 반영
+- React: 파일 선택 + 업로드 버튼 구현 (`FormData`)
+- 샘플 엑셀 파일로 테스트 성공
+
+---
+
+📂 폴더 구조 정리
+----------------------
+ERP/
+├── backend/
+│   ├── main.py
+│   ├── venv/
+│   └── routers/
+│       ├── __init__.py
+│       ├── vendors.py
+│       └── products.py
+├── frontend/
+│   ├── src/
+│   │   ├── App.js
+│   │   └── pages/
+│   │       ├── VendorPage.js
+│   │       └── ProductPage.js
+
+---
+
+🧠 기술 요약
+-------------
+- 백엔드: FastAPI, uvicorn, CORS, pydantic, pandas, openpyxl
+- 프론트엔드: React, axios, react-router-dom
+- 파일 업로드: multipart/form-data + FormData
+- 데이터 저장: 아직은 메모리 기반 (DB 미도입)
+
+---
+
+🎉 1주차 완료 시점 성과
+------------------------
+- 기본 ERP 틀 완성 (메뉴 + 라우팅 + API 연동)
+- 업체/제품 관리 기능 작동
+- 실무에서 사용하는 엑셀 업로드 기능 구현
+- 프론트와 백엔드가 실제로 연결되어 작동하는 구조 체험
