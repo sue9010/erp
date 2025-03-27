@@ -3,7 +3,7 @@ import axios from "axios";
 import { API_BASE } from "../api/config";
 import * as XLSX from "xlsx";
 import readXlsxFile from 'read-excel-file';
-
+import { vendorConfig } from "../api/config";
 
 export const useVendorManagement = () => {
   const [vendors, setVendors] = useState([]);
@@ -58,71 +58,55 @@ export const useVendorManagement = () => {
   
   
 
+
   const handleExcelUpload = async (file, closeModalCallback) => {
     if (!file) {
       setUploadError("파일을 선택해주세요.");
       return;
     }
-  
+
     try {
-      // 엑셀 파일 읽기
       const rows = await readXlsxFile(file);
-  
-      // 데이터 유효성 검사
+
       if (!rows || rows.length < 2) {
         throw new Error("유효한 데이터가 없습니다. 파일을 확인해주세요.");
       }
-  
-      // 헤더 행 가져오기
+
       const headerRow = rows[0];
       if (!headerRow || headerRow.length === 0) {
         throw new Error("헤더 행이 비어있습니다.");
       }
-  
-      // 헤더 매핑
-      const columnMapping = {
-        company_name: headerRow.findIndex((cell) => cell === "업체명"),
-        contact_person: headerRow.findIndex((cell) => cell === "담당자명"),
-        contact: headerRow.findIndex((cell) => cell === "연락처"),
-        country: headerRow.findIndex((cell) => cell === "국가"),
-        address: headerRow.findIndex((cell) => cell === "주소"),
-        export_license_required: headerRow.findIndex((cell) => cell === "수출허가필요여부"),
-        export_license_type: headerRow.findIndex((cell) => cell === "수출허가구분"),
-        export_license_number: headerRow.findIndex((cell) => cell === "수출허가번호"),
-        shipping_method: headerRow.findIndex((cell) => cell === "운송방법"),
-        shipping_account: headerRow.findIndex((cell) => cell === "운송계정"),
-        note: headerRow.findIndex((cell) => cell === "비고"),
-      };
 
-      // 필수 필드 검증
-      ["company_name", "contact_person", "contact", "country", "address"].forEach((key) => {
-        if (columnMapping[key] === -1) {
-          throw new Error(`[${key}] 열이 누락되었습니다.`);
-        }
+      // 동적으로 헤더 → key 매핑
+      const columnMapping = {};
+      vendorConfig.fields.forEach((field) => {
+        const index = headerRow.findIndex((cell) => cell === field.label);
+        columnMapping[field.key] = index;
       });
 
-      // 데이터 추출
-      const vendors = rows.slice(1).map((row) => ({
-        company_name: row[columnMapping.company_name]?.toString().trim() || "",
-        contact_person: row[columnMapping.contact_person]?.toString().trim() || "",
-        contact: row[columnMapping.contact]?.toString().trim() || "",
-        country: row[columnMapping.country]?.toString().trim() || "",
-        address: row[columnMapping.address]?.toString().trim() || "",
-        export_license_required: row[columnMapping.export_license_required]?.toString().trim() || "",
-        export_license_type: row[columnMapping.export_license_type]?.toString().trim() || "",
-        export_license_number: row[columnMapping.export_license_number]?.toString().trim() || "",
-        shipping_method: row[columnMapping.shipping_method]?.toString().trim() || "",
-        shipping_account: row[columnMapping.shipping_account]?.toString().trim() || "",
-        note: row[columnMapping.note]?.toString().trim() || "",
-      }));
+      // 필수 필드 검증
+      vendorConfig.fields
+        .filter((f) => f.required)
+        .forEach((f) => {
+          if (columnMapping[f.key] === -1) {
+            throw new Error(`[${f.label}] 열이 누락되었습니다.`);
+          }
+        });
 
-  
-      // 서버로 전송
+      const vendors = rows.slice(1).map((row) => {
+        const vendor = {};
+        vendorConfig.fields.forEach((field) => {
+          const cell = row[columnMapping[field.key]];
+          vendor[field.key] = cell?.toString().trim() || "";
+        });
+        return vendor;
+      });
+
       await axios.post(`${API_BASE}/vendors/bulk`, { vendors });
       alert("공급업체 일괄 추가 완료!");
       setUploadError("");
       fetchVendors();
-  
+
       if (typeof closeModalCallback === "function") {
         closeModalCallback();
       }
@@ -131,6 +115,7 @@ export const useVendorManagement = () => {
       setUploadError(error.message || "엑셀 파일 처리 중 오류가 발생했습니다.");
     }
   };
+
   
 
   const downloadExcel = (vendors) => {

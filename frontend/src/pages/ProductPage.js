@@ -1,3 +1,5 @@
+// src/pages/ProductPage.js
+
 import React, { useState, useMemo } from "react";
 import { Button, ButtonGroup, Form } from "react-bootstrap";
 import { AddModifyModal } from "../modals/AddModifyModal";
@@ -9,14 +11,7 @@ import { productConfig } from "../api/config";
 function ProductPage() {
   const [showAddModifyModal, setShowAddModifyModal] = useState(false);
   const [showExcelModal, setShowExcelModal] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState({
-    category: "",
-    name: "",
-    manufacturer: "",
-    price: "",
-    stock: "",
-    note: "",
-  });
+  const [currentProduct, setCurrentProduct] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
@@ -34,7 +29,7 @@ function ProductPage() {
   const filteredProducts = useMemo(() => {
     return products.filter((product) =>
       productConfig.searchFields.some((field) =>
-        product[field].toLowerCase().includes(searchTerm.toLowerCase())
+        product[field]?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
   }, [products, searchTerm]);
@@ -48,16 +43,11 @@ function ProductPage() {
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
   const handleOpenAddModifyModal = (product = null) => {
-    setCurrentProduct(
-      product || {
-        category: "",
-        name: "",
-        manufacturer: "",
-        price: "",
-        stock: "",
-        note: "",
-      }
-    );
+    const defaultProduct = productConfig.fields.reduce((acc, field) => {
+      acc[field.key] = "";
+      return acc;
+    }, {});
+    setCurrentProduct(product || defaultProduct);
     setShowAddModifyModal(true);
   };
 
