@@ -1,13 +1,13 @@
-from fastapi import APIRouter, HTTPException, Path, UploadFile, File
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List
-import os
+import os, io, zipfile, re
 from uuid import uuid4
-import zipfile
-import io
+import urllib.parse
 
 router = APIRouter()
+
 
 # ==== 모델 정의 ====
 class Vendor(BaseModel):
@@ -159,16 +159,35 @@ def download_all_vendor_files(vendor_id: int):
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
         for f in matched_files:
-            zipf.write(f["path"], arcname=f["original_name"])
+            print(f"[🧾 파일 경로]: {f['path']}")
+            if not os.path.exists(f["path"]):
+                print(f"[⚠️ 누락된 파일]: {f['path']}")
+                continue
+            try:
+                zipf.write(f["path"], arcname=f["original_name"])
+            except Exception as e:
+                print(f"[❌ 압축 실패]: {f['path']} - {e}")
+                continue
 
     zip_buffer.seek(0)
     vendor_name = next((v["company_name"] for v in vendors if v["id"] == vendor_id), "files")
-    zip_filename = f"{vendor_name}_첨부파일.zip"
+    safe_vendor_name = re.sub(r'[^a-zA-Z0-9가-힣_]', '_', vendor_name)
+    zip_filename = f"{safe_vendor_name}_첨부파일.zip"
+    encoded_filename = urllib.parse.quote(zip_filename)
 
-    return StreamingResponse(zip_buffer, media_type="application/x-zip-compressed", headers={
-        "Content-Disposition": f"attachment; filename={zip_filename}"
-    })
+    try:
+        return StreamingResponse(
+            zip_buffer,
+            media_type="application/x-zip-compressed",
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
+            }
+        )
+    except Exception as e:
+        print(f"[❌ ZIP 응답 실패]: {e}")
+        raise HTTPException(status_code=500, detail="ZIP 생성 또는 응답 실패")
 
+        
 @router.get("/files/{file_id}")
 def download_file(file_id: str):
     file_meta = next((f for f in uploaded_files if f["id"] == file_id), None)

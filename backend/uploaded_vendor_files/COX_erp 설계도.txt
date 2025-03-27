@@ -1,0 +1,118 @@
+= SPEC-001: 간단한 ERP 웹 앱 설계 :sectnums: :toc:
+== Background
+소규모 기업에서 연간 약 1,000건의 주문과 500개 업체를 관리해야 하는 상황에서, 견적/주문/생산/배송/입금 등의 판매 및 구매 업무를 디지털화하고자 하는 요구가 발생하였다.
+ FASTAPI와 REACT를 활용하여 실무 중심의 ERP 웹 앱을 구축하고, 주요 기능으로는 업체, 제품, 견적, 주문, 생산, 입금, 배송, 구매 관리를 포함한다.
+ 10명의 사용자가 동일한 권한으로 접근하며, 실시간성보다는 효율적인 수기 업무의 디지털화와 이메일 및 파일 기반 업무 자동화를 목표로 한다.
+== Requirements
+=== Must Have
+업체 관리 기능 (CRUD + 엑셀 업로드/다운로드 + 파일 업로드)
+제품 관리 기능 (CRUD + 엑셀 업로드/다운로드)
+견적(Quotation) 관리 기능 (CRUD + PDF 생성/이메일 발송 + 엑셀)
+주문 관리 기능 (CRUD + 접수번호 관리 + PDF 생성/이메일 발송 + 엑셀)
+생산 관리 기능 (시리얼 번호 관리, 출고 예정일, PDF 생성/이메일 발송)
+입금 관리 기능 (입금 정보 입력, 파일 업로드, 주문과 연결 가능, 엑셀)
+배송 관리 기능 (운송장/세금계산서/수출신고필증 업로드, PDF 생성)
+구매 관리 기능 (입고 처리 시 제품 수량 증가, 파일 업로드, PDF 생성)
+사용자 10명 동시 사용 가능
+이메일 발송 기능 (POP3 기반, 견적/주문/출고 요청 발송)
+=== Should Have
+견적과 주문의 연결 기능
+제품 수량 자동 차감/증가 (주문 시 감소, 입고 시 증가)
+유연한 제품 구성 (모듈 + 렌즈 + 온도센서 조합 가능)
+=== Could Have
+바코드 리더기로 시리얼 번호 입력 확장 가능성 고려
+사용자 역할/권한 분리 (향후 확장 대비)
+=== Won’t Have
+실시간 알림 (알림창/푸시 등)
+IMAP 기반 이메일 통합
+== Method
+전체 아키텍처, 데이터베이스 스키마, 컴포넌트 구조, 주요 API 설계 등은 대화 내용을 기반으로 포함한다.
+[plantuml, architecture, png]
+@startuml actor User
+package "Frontend (React + Tailwind)" { [Web App] }
+package "Backend (FastAPI)" { [API Server] [Email Sender] [PDF Generator] [Excel Processor] [File Storage Handler] }
+package "Storage" { database "PostgreSQL\n(데이터 저장)" as DB folder "Local / S3\n(파일 업로드 저장소)" as FileStore }
+User --> [Web App] [Web App] --> [API Server] [API Server] --> DB [API Server] --> FileStore [API Server] --> [Email Sender] [API Server] --> [PDF Generator] [API Server] --> [Excel Processor] @enduml
+=== 업체 관리
+vendors, vendor_files 테이블 설계
+파일 분리 업로드 구조
+엑셀 업로드/다운로드 API 제공
+=== 제품 관리
+products 테이블 설계
+단가, 제조사, 설명 포함
+수량 관리 및 엑셀 기능 포함
+=== 재고 이력
+stock_history 테이블 설계 (입고/출고/수동조정)
+관련 주문, 구매 등 연결용 reference 포함
+=== 견적 관리
+quotations, quotation_items 테이블
+견적서 PDF 생성 및 이메일 발송
+엑셀 템플릿 통한 다량 등록 지원
+=== 주문 관리
+orders, order_items, order_files 테이블
+접수번호 기반 연결
+수량 차감 및 stock_history 기록
+PDF/이메일/엑셀 지원
+=== 생산 관리
+productions, production_serials 테이블
+시리얼 번호 입력 + 출고 예정일
+출고 요청서 PDF 생성 및 발송
+=== 입금 관리
+payments, payment_files 테이블
+주문 연결 또는 독립 존재 가능
+입금증 업로드, 엑셀 관리
+=== 배송 관리
+shipments, shipment_files 테이블
+접수번호 기준으로 배송 추적
+CI/PL PDF 자동 생성 및 이메일 발송
+=== 구매 관리
+purchases, purchase_items, purchase_files 테이블
+입고 시 수량 증가 및 stock_history 기록
+송금증, 수입신고필증 등 파일 관리
+CI/PL PDF 생성 및 이메일 발송
+== Implementation
+프로젝트 세팅 및 환경 구성
+
+
+FastAPI 백엔드 및 React 프론트엔드 초기 세팅
+PostgreSQL, 파일 저장 디렉토리 또는 S3 연동
+인증/인가 없음 (모든 사용자 동일 권한)
+
+
+핵심 도메인 기능 개발 순서:
+
+
+업체 관리 (DB + 파일 업로드 + 엑셀)
+제품 관리 (DB + 엑셀)
+재고 이력 (read-only + 주문/구매와 연동)
+견적 관리 (PDF, 이메일, 엑셀 포함)
+주문 관리 (재고 차감, PDF, 이메일 포함)
+생산 관리 (시리얼 + 출고 예정일 + PDF)
+입금 관리 (엑셀 + 파일 업로드 포함)
+배송 관리 (운송장 및 CI/PL 문서)
+구매 관리 (입고 → 수량 증가 + 파일/PDF)
+공통 유틸 기능 구현:
+
+
+PDF Generator
+Excel Processor
+POP3 Email Sender
+== Milestones
+주차별 개발 계획
+
+
+Week 1: 기본 구조 세팅 + 업체/제품 관리 완료
+Week 2: 견적/주문/재고 이력 구현
+Week 3: 생산/입금/배송/구매 구현
+Week 4: PDF/이메일 통합 및 테스트
+테스트 및 피드백 반영
+
+
+실제 입력/다운로드 테스트, 파일 업로드 검증
+사용자 시나리오 기반 테스트 진행
+== Gathering Results
+모든 기능이 M단계 이상 작동하는지 체크리스트로 검증
+실제 사용 데이터를 기준으로 견적~배송까지 흐름 검증
+견적서/주문서/CI-PL PDF, 이메일 발송 정확성 테스트
+관리자 피드백 통해 UX 및 성능 보완
+
