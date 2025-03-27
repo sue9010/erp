@@ -1,11 +1,9 @@
+// src/modals/AddModifyModal.js
 import React from 'react';
 import { Modal, Form, Button } from 'react-bootstrap';
-import { productConfig, vendorConfig } from '../api/config';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-export const AddModifyModal = ({ show, handleClose, product, handleSubmit, setProduct, modalType }) => {
-  const config = modalType === 'vendor' ? vendorConfig : productConfig;
-
+export const AddModifyModal = ({ show, handleClose, product, handleSubmit, setProduct, config }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setProduct((prev) => ({ ...prev, [name]: value }));

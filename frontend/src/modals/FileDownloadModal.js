@@ -1,21 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Button, ListGroup, Spinner } from "react-bootstrap";
-import api from "../api/axiosConfig"; // ✅ 커스텀 axios 인스턴스
+import api from "../api/axiosConfig";
 
-const FileDownloadModal = ({ vendorId, vendorName, show, handleClose }) => {
+const FileDownloadModal = ({ entity = "vendors", entityId, entityName, show, handleClose }) => {
   const [fileList, setFileList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (show && vendorId) {
+    if (show && entityId) {
       fetchFileList();
     }
-  }, [show, vendorId]);
+  }, [show, entityId]);
 
   const fetchFileList = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/vendors/${vendorId}/files`);
+      const response = await api.get(`/${entity}/${entityId}/files`);
       setFileList(response.data);
     } catch (err) {
       console.error("파일 목록 불러오기 실패:", err);
@@ -43,13 +43,13 @@ const FileDownloadModal = ({ vendorId, vendorName, show, handleClose }) => {
 
   const handleDownloadAll = async () => {
     try {
-      const response = await api.get(`/vendors/${vendorId}/files/download-all`, {
+      const response = await api.get(`/${entity}/${entityId}/files/download-all`, {
         responseType: "blob",
       });
       const url = window.URL.createObjectURL(response.data);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${vendorName}_첨부파일.zip`;
+      link.download = `${entityName}_첨부파일.zip`;
       link.click();
     } catch (err) {
       console.error("전체 다운로드 실패:", err);
@@ -60,7 +60,7 @@ const FileDownloadModal = ({ vendorId, vendorName, show, handleClose }) => {
   return (
     <Modal show={show} onHide={handleClose} size="lg">
       <Modal.Header closeButton>
-        <Modal.Title>📁 {vendorName} 파일 다운로드</Modal.Title>
+        <Modal.Title>📁 {entityName} 파일 다운로드</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {loading ? (

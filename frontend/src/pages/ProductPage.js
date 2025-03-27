@@ -120,7 +120,7 @@ function ProductPage() {
         product={currentProduct}
         handleSubmit={handleProductSubmit}
         setProduct={setCurrentProduct}
-        modalType="product"
+        config={productConfig}
       />
 
       <ExcelUploadModal

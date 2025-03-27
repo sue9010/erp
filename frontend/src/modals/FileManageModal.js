@@ -2,20 +2,20 @@ import React, { useEffect, useState } from "react";
 import { Modal, Button, ListGroup, Spinner } from "react-bootstrap";
 import api from "../api/axiosConfig";
 
-const FileManageModal = ({ vendorId, vendorName, show, handleClose }) => {
+const FileManageModal = ({ entity = "vendors", entityId, entityName, show, handleClose }) => {
   const [fileList, setFileList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (show && vendorId) {
+    if (show && entityId) {
       fetchFileList();
     }
-  }, [show, vendorId]);
+  }, [show, entityId]);
 
   const fetchFileList = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/vendors/${vendorId}/files`);
+      const response = await api.get(`/${entity}/${entityId}/files`);
       setFileList(response.data);
     } catch (err) {
       console.error("파일 목록 불러오기 실패:", err);
@@ -39,7 +39,7 @@ const FileManageModal = ({ vendorId, vendorName, show, handleClose }) => {
   return (
     <Modal show={show} onHide={handleClose} size="lg">
       <Modal.Header closeButton>
-        <Modal.Title>📂 {vendorName} 파일 관리</Modal.Title>
+        <Modal.Title>📂 {entityName} 파일 관리</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {loading ? (

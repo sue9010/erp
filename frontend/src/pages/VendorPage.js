@@ -83,13 +83,12 @@ function VendorPage() {
   const handleFileUpload = async (files) => {
     if (!uploadTargetId) return;
     try {
-      await handleVendorFileUpload(uploadTargetId, files); // ✅ 배열 전체를 한 번에 전달
+      await handleVendorFileUpload(uploadTargetId, files);
     } catch (err) {
       console.error("업로드 실패:", err);
       alert("파일 업로드 실패");
     }
   };
-  
 
   return (
     <div>
@@ -150,7 +149,7 @@ function VendorPage() {
         product={currentVendor}
         handleSubmit={(vendor) => handleVendorSubmit(vendor, () => setShowAddModifyModal(false))}
         setProduct={setCurrentVendor}
-        modalType="vendor"
+        config={vendorConfig}
       />
 
       <ExcelUploadModal
@@ -170,15 +169,17 @@ function VendorPage() {
       <FileDownloadModal
         show={showFileDownloadModal}
         handleClose={() => setShowFileDownloadModal(false)}
-        vendorId={currentVendor.id}
-        vendorName={currentVendor.company_name}
+        entity="vendors"
+        entityId={currentVendor.id}
+        entityName={currentVendor.company_name}
       />
 
       <FileManageModal
         show={showFileManageModal}
         handleClose={() => setShowFileManageModal(false)}
-        vendorId={currentVendor.id}
-        vendorName={currentVendor.company_name}
+        entity="vendors"
+        entityId={currentVendor.id}
+        entityName={currentVendor.company_name}
       />
     </div>
   );

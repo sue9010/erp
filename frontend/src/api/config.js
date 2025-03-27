@@ -57,3 +57,33 @@ export const vendorConfig = {
     { key: 'note', header: '비고', align: 'center' },
   ]
 };
+
+export const orderConfig = {
+  title: "주문 목록",
+  enableFile: true,
+  fields: [
+    { key: 'po_number', label: '발주 번호', required: true },
+    { key: 'order_number', label: '접수 번호', required: true },
+    { key: 'vendor_name', label: '고객사', required: true },
+    { key: 'order_date', label: '주문 날짜', type: 'date', required: true },
+    { key: 'due_date', label: '납기일', type: 'date', required: true },
+    { key: 'total_amount_ex_vat', label: '총 금액(VAT 미포함)', type: 'number', required: true },
+    { key: 'total_amount_inc_vat', label: '총 금액(VAT 포함)', type: 'number', required: true },
+    { key: 'note', label: '비고' },
+    { key: 'status', label: '상태' }
+  ],
+  searchFields: ['order_number', 'vendor_name', 'note', 'status'],
+  columns: [
+    { key: 'order_number', header: '접수 번호', align: 'center' },
+    { key: 'vendor_name', header: '고객사', align: 'center' },
+    { key: 'order_date', header: '주문일', align: 'center' },
+    { key: 'due_date', header: '납기일', align: 'center' },
+    {
+      key: 'total_amount_inc_vat',
+      header: '총 금액(VAT 포함)',
+      align: 'right',
+      format: (v) => `${(v ?? 0).toLocaleString()}원`,
+    },
+    { key: 'status', header: '상태', align: 'center' }
+  ]
+};

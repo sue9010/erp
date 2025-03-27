@@ -1,105 +1,166 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { API_BASE } from "../api/config"; // config.js 경로에 맞게 조정
+// src/pages/OrderPage.js
+import React, { useState, useMemo } from "react";
+import { Button, ButtonGroup, Form } from "react-bootstrap";
+import { AddModifyModal } from "../modals/AddModifyModal";
+import { ExcelUploadModal } from "../modals/ExcelUploadModal";
+import FileUploadModal from "../modals/FileUploadModal";
+import FileManageModal from "../modals/FileManageModal";
+import FileDownloadModal from "../modals/FileDownloadModal";
+import { DataTable } from "../components/DataTable";
+import { useOrderManagement } from "../hooks/useOrderManagement";
+import { orderConfig } from "../api/config";
+import { uploadFile } from "../api/fileApi";
 
 function OrderPage() {
-  const [products, setProducts] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [newOrder, setNewOrder] = useState({
-    customer: "",
-    items: [{ product_name: "", quantity: 1 }]
-  });
+  const [showAddModifyModal, setShowAddModifyModal] = useState(false);
+  const [showExcelModal, setShowExcelModal] = useState(false);
+  const [showFileUploadModal, setShowFileUploadModal] = useState(false);
+  const [showFileManageModal, setShowFileManageModal] = useState(false);
+  const [showFileDownloadModal, setShowFileDownloadModal] = useState(false);
+  const [currentOrder, setCurrentOrder] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
-  useEffect(() => {
-    axios.get(`${API_BASE}/products`).then(res => setProducts(res.data));
-    fetchOrders();
-  }, []);
+  const {
+    orders,
+    handleDelete,
+    handleOrderSubmit,
+    handleExcelUpload,
+    uploadError,
+    fileInputRef,
+    downloadExcel,
+  } = useOrderManagement();
 
-  const fetchOrders = () => {
-    axios.get(`${API_BASE}/orders`).then(res => setOrders(res.data));
+  const filteredOrders = useMemo(() => {
+    const filtered = orders.filter((order) =>
+      orderConfig.searchFields.some((field) =>
+        order[field]?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+    return filtered.sort((a, b) => b.id - a.id);
+  }, [orders, searchTerm]);
+
+  const paginatedOrders = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredOrders.slice(startIndex, endIndex);
+  }, [filteredOrders, currentPage]);
+
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+
+  const handleOpenAddModifyModal = (order = null) => {
+    const defaultOrder = orderConfig.fields.reduce((acc, field) => {
+      acc[field.key] = "";
+      return acc;
+    }, {});
+    setCurrentOrder(order || defaultOrder);
+    setShowAddModifyModal(true);
   };
 
-  const addItem = () => {
-    setNewOrder({
-      ...newOrder,
-      items: [...newOrder.items, { product_name: "", quantity: 1 }]
-    });
+  const handleCloseAddModifyModal = () => {
+    setShowAddModifyModal(false);
   };
 
-  const updateItem = (index, field, value) => {
-    const items = [...newOrder.items];
-    items[index][field] = field === "quantity" ? parseInt(value) : value;
-    setNewOrder({ ...newOrder, items });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    axios.post(`${API_BASE}/orders`, newOrder)
-      .then(() => {
-        alert("주문 등록 완료!");
-        setNewOrder({ customer: "", items: [{ product_name: "", quantity: 1 }] });
-        fetchOrders();
-      })
-      .catch((err) => {
-        if (err.response) {
-          alert("❗주문 실패: " + err.response.data.detail);
-        } else {
-          alert("❗오류 발생: " + err.message);
-        }
-      });
+  const handleUploadFiles = async (files) => {
+    for (const file of files) {
+      await uploadFile("orders", currentOrder.id, file);
+    }
+    alert("파일 업로드가 완료되었습니다.");
+    setShowFileUploadModal(false);
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>📦 주문 목록</h1>
-      <ul>
-        {orders.map((o) => (
-          <li key={o.id}>
-            {o.customer}
-            <ul>
-              {o.items.map((item, i) => (
-                <li key={i}>{item.product_name} / {item.quantity}개</li>
-              ))}
-            </ul>
-          </li>
-        ))}
-      </ul>
+    <div>
+      <h2>{orderConfig.title}</h2>
 
-      <hr />
-      <h2>🛒 새 주문 등록</h2>
-      <form onSubmit={handleSubmit}>
-        <input
+      <Form.Group className="mb-3">
+        <Form.Control
           type="text"
-          placeholder="고객명"
-          value={newOrder.customer}
-          onChange={(e) => setNewOrder({ ...newOrder, customer: e.target.value })}
-          required
+          placeholder={`검색 (${orderConfig.searchFields.join(", ")})`}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <h3>주문 항목</h3>
-        {newOrder.items.map((item, index) => (
-          <div key={index}>
-            <select
-              value={item.product_name}
-              onChange={(e) => updateItem(index, "product_name", e.target.value)}
-              required
-            >
-              <option value="">-- 제품 선택 --</option>
-              {products.map((p) => (
-                <option key={p.name} value={p.name}>{p.name}</option>
-              ))}
-            </select>
-            <input
-              type="number"
-              value={item.quantity}
-              onChange={(e) => updateItem(index, "quantity", e.target.value)}
-              required
-            />
-          </div>
-        ))}
-        <button type="button" onClick={addItem}>+ 항목 추가</button>
-        <br /><br />
-        <button type="submit">주문 등록</button>
-      </form>
+      </Form.Group>
+
+      <ButtonGroup>
+        <Button variant="primary" onClick={() => handleOpenAddModifyModal()}>
+          주문 등록
+        </Button>
+        <Button variant="secondary" onClick={() => setShowExcelModal(true)}>
+          엑셀로 일괄 등록
+        </Button>
+        <Button variant="success" onClick={() => downloadExcel(filteredOrders)}>
+          엑셀로 다운로드
+        </Button>
+      </ButtonGroup>
+
+      <DataTable
+        data={paginatedOrders}
+        config={{ ...orderConfig, enableFile: true }}
+        onEdit={handleOpenAddModifyModal}
+        onDelete={handleDelete}
+        onUploadClick={(row) => { setCurrentOrder(row); setShowFileUploadModal(true); }}
+        onDownloadClick={(row) => { setCurrentOrder(row); setShowFileDownloadModal(true); }}
+        onManageClick={(row) => { setCurrentOrder(row); setShowFileManageModal(true); }}
+      />
+
+      <div className="pagination-controls">
+        <Button
+          variant="secondary"
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage(currentPage - 1)}
+        >
+          이전
+        </Button>
+        <span>{currentPage} / {totalPages}</span>
+        <Button
+          variant="secondary"
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage(currentPage + 1)}
+        >
+          다음
+        </Button>
+      </div>
+
+      <AddModifyModal
+        show={showAddModifyModal}
+        handleClose={handleCloseAddModifyModal}
+        product={currentOrder}
+        handleSubmit={handleOrderSubmit}
+        setProduct={setCurrentOrder}
+        config={orderConfig}
+      />
+
+      <ExcelUploadModal
+        show={showExcelModal}
+        handleClose={() => setShowExcelModal(false)}
+        handleUpload={(file) => handleExcelUpload(file, () => setShowExcelModal(false))}
+        uploadError={uploadError}
+        fileInputRef={fileInputRef}
+      />
+
+      <FileUploadModal
+        show={showFileUploadModal}
+        handleClose={() => setShowFileUploadModal(false)}
+        onUpload={handleUploadFiles}
+      />
+
+      <FileManageModal
+        show={showFileManageModal}
+        handleClose={() => setShowFileManageModal(false)}
+        entity="orders"
+        entityId={currentOrder.id}
+        entityName={currentOrder.order_number || "주문"}
+      />
+
+      <FileDownloadModal
+        show={showFileDownloadModal}
+        handleClose={() => setShowFileDownloadModal(false)}
+        entity="orders"
+        entityId={currentOrder.id}
+        entityName={currentOrder.order_number || "주문"}
+      />
     </div>
   );
 }
