@@ -1,9 +1,15 @@
-from fastapi import APIRouter, HTTPException, Path
+from fastapi import APIRouter, HTTPException, Path, UploadFile, File
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import List
+import os
+from uuid import uuid4
+import zipfile
+import io
 
 router = APIRouter()
 
+# ==== 모델 정의 ====
 class Vendor(BaseModel):
     company_name: str
     contact_person: str
@@ -15,17 +21,35 @@ class Vendor(BaseModel):
     export_license_number: str
     shipping_method: str 
     shipping_account: str
-    note: str = ""  # 기본값 설정
+    note: str = ""
 
 class BulkVendorCreate(BaseModel):
     vendors: List[Vendor]
 
+# ==== 전역 상태 ====
 vendors = [
-    {"id": 1, "company_name":"COX","contact_person": "David", "contact": "010-1234-5678", "country":"대한민국","address": "서울시 강남구",
-    "export_license_required":"불필요","export_license_type":"해당 없음","export_license_number":"해당 없음","shipping_method":"택배","shipping_account":"COX", "note": "우수 공급업체"},
+    {
+        "id": 1,
+        "company_name": "COX",
+        "contact_person": "David",
+        "contact": "010-1234-5678",
+        "country": "대한민국",
+        "address": "서울시 강남구",
+        "export_license_required": "불필요",
+        "export_license_type": "해당 없음",
+        "export_license_number": "해당 없음",
+        "shipping_method": "택배",
+        "shipping_account": "COX",
+        "note": "우수 공급업체",
+        "file_id": None
+    },
 ]
 
+uploaded_files = []  # [{id, vendor_id, path, original_name}]
+UPLOAD_DIR = "uploaded_vendor_files"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+# ==== 기본 CRUD ====
 def get_max_id():
     return max(v["id"] for v in vendors) if vendors else 0
 
@@ -35,12 +59,11 @@ def get_vendors():
 
 @router.post("/vendors")
 def add_vendor(vendor: Vendor):
-    # ✅ company_name 기준 중복 체크
     if any(v["company_name"] == vendor.company_name for v in vendors):
         raise HTTPException(status_code=400, detail="중복된 공급업체 이름이 존재합니다")
-    
+
     new_id = get_max_id() + 1
-    new_vendor = {"id": new_id, **vendor.dict()}
+    new_vendor = {"id": new_id, "file_id": None, **vendor.dict()}
     vendors.append(new_vendor)
     return {"message": "공급업체가 추가되었습니다", "vendor": new_vendor}
 
@@ -51,13 +74,12 @@ def add_bulk_vendors(bulk_vendor: BulkVendorCreate):
     errors = []
 
     for idx, vendor in enumerate(bulk_vendor.vendors):
-        # ✅ company_name 필드 사용
         if any(v["company_name"] == vendor.company_name for v in vendors):
             errors.append(f"공급업체 이름 '{vendor.company_name}'이(가) 중복됩니다.")
             continue
 
         new_id = current_max_id + idx + 1
-        new_vendor = {"id": new_id, **vendor.dict()}
+        new_vendor = {"id": new_id, "file_id": None, **vendor.dict()}
         new_vendors.append(new_vendor)
 
     vendors.extend(new_vendors)
@@ -80,7 +102,92 @@ def delete_vendor(vendor_id: int):
     global vendors
     initial_length = len(vendors)
     vendors = [v for v in vendors if v["id"] != vendor_id]
-    
+
     if len(vendors) == initial_length:
         raise HTTPException(status_code=404, detail="공급업체를 찾을 수 없습니다")
     return {"message": "공급업체가 삭제되었습니다"}
+
+# ==== 파일 업로드 및 다운로드 ====
+
+@router.post("/vendors/{vendor_id}/files")
+def upload_vendor_file(vendor_id: int, file: UploadFile = File(...)):
+    vendor = next((v for v in vendors if v["id"] == vendor_id), None)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="공급업체를 찾을 수 없습니다")
+
+    original_filename = file.filename
+    company_name = vendor["company_name"].replace(" ", "_")
+    sanitized_name = f"{company_name}_{original_filename}"
+    path = os.path.join(UPLOAD_DIR, sanitized_name)
+
+    with open(path, "wb") as f:
+        f.write(file.file.read())
+
+    file_id = str(uuid4())
+    uploaded_files.append({
+        "id": file_id,
+        "vendor_id": vendor_id,
+        "path": path,
+        "original_name": original_filename
+    })
+
+    vendor["file_id"] = file_id  # 마지막 업로드된 파일 기준
+
+    return {"file_id": file_id, "original_name": original_filename}
+
+@router.get("/vendors/{vendor_id}/files")
+def list_vendor_files(vendor_id: int):
+    vendor = next((v for v in vendors if v["id"] == vendor_id), None)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="공급업체를 찾을 수 없습니다")
+
+    file_list = [
+        {
+            "file_id": f["id"],
+            "original_name": f["original_name"]
+        }
+        for f in uploaded_files if f["vendor_id"] == vendor_id
+    ]
+    return file_list
+
+@router.get("/vendors/{vendor_id}/files/download-all")
+def download_all_vendor_files(vendor_id: int):
+    matched_files = [f for f in uploaded_files if f["vendor_id"] == vendor_id]
+    if not matched_files:
+        raise HTTPException(status_code=404, detail="업로드된 파일이 없습니다.")
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for f in matched_files:
+            zipf.write(f["path"], arcname=f["original_name"])
+
+    zip_buffer.seek(0)
+    vendor_name = next((v["company_name"] for v in vendors if v["id"] == vendor_id), "files")
+    zip_filename = f"{vendor_name}_첨부파일.zip"
+
+    return StreamingResponse(zip_buffer, media_type="application/x-zip-compressed", headers={
+        "Content-Disposition": f"attachment; filename={zip_filename}"
+    })
+
+@router.get("/files/{file_id}")
+def download_file(file_id: str):
+    file_meta = next((f for f in uploaded_files if f["id"] == file_id), None)
+    if not file_meta:
+        raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
+
+    return FileResponse(path=file_meta["path"], filename=file_meta["original_name"])
+
+@router.delete("/files/{file_id}")
+def delete_file(file_id: str):
+    global uploaded_files
+    file_meta = next((f for f in uploaded_files if f["id"] == file_id), None)
+    if not file_meta:
+        raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
+
+    try:
+        os.remove(file_meta["path"])
+    except FileNotFoundError:
+        pass  # 이미 삭제된 경우 무시
+
+    uploaded_files = [f for f in uploaded_files if f["id"] != file_id]
+    return {"message": "파일이 삭제되었습니다"}

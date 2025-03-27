@@ -4,6 +4,7 @@ import { API_BASE } from "../api/config";
 import * as XLSX from "xlsx";
 import readXlsxFile from 'read-excel-file';
 import { vendorConfig } from "../api/config";
+import { uploadVendorFile, downloadVendorFile } from "../api/vendorApi";
 
 export const useVendorManagement = () => {
   const [vendors, setVendors] = useState([]);
@@ -46,18 +47,15 @@ export const useVendorManagement = () => {
         await axios.post(`${API_BASE}/vendors`, vendor);
         alert("공급업체가 추가되었습니다.");
       }
-      await fetchVendors(); // 목록 새로고침
+      await fetchVendors();
       if (typeof closeModalCallback === "function") {
-        closeModalCallback(); // 모달 닫기
+        closeModalCallback();
       }
     } catch (error) {
       console.error(isEditing ? "공급업체 수정 실패:" : "공급업체 등록 실패:", error);
       alert("공급업체 등록/수정에 실패했습니다.");
     }
   };
-  
-  
-
 
   const handleExcelUpload = async (file, closeModalCallback) => {
     if (!file) {
@@ -77,14 +75,12 @@ export const useVendorManagement = () => {
         throw new Error("헤더 행이 비어있습니다.");
       }
 
-      // 동적으로 헤더 → key 매핑
       const columnMapping = {};
       vendorConfig.fields.forEach((field) => {
         const index = headerRow.findIndex((cell) => cell === field.label);
         columnMapping[field.key] = index;
       });
 
-      // 필수 필드 검증
       vendorConfig.fields
         .filter((f) => f.required)
         .forEach((f) => {
@@ -116,13 +112,38 @@ export const useVendorManagement = () => {
     }
   };
 
-  
-
   const downloadExcel = (vendors) => {
     const worksheet = XLSX.utils.json_to_sheet(vendors);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Vendors");
     XLSX.writeFile(workbook, "vendors.xlsx");
+  };
+
+  const handleVendorFileUpload = async (vendorId, files) => {
+    const fileList = Array.isArray(files) ? files : [files]; // 단일 또는 복수 허용
+    try {
+      for (const file of fileList) {
+        await uploadVendorFile(vendorId, file);
+      }
+      alert("파일 업로드 완료!");
+    } catch (err) {
+      console.error("파일 업로드 중 오류:", err);
+      alert("파일 업로드 실패!");
+    }
+  };
+
+  const handleVendorFileDownload = async (fileId) => {
+    try {
+      const blob = await downloadVendorFile(fileId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "첨부파일.pdf";
+      link.click();
+    } catch (err) {
+      console.error("다운로드 실패:", err);
+      alert("파일 다운로드 실패!");
+    }
   };
 
   return {
@@ -132,6 +153,8 @@ export const useVendorManagement = () => {
     handleVendorSubmit,
     handleExcelUpload,
     downloadExcel,
+    handleVendorFileUpload,
+    handleVendorFileDownload,
     uploadError,
     fileInputRef,
   };

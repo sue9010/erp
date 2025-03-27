@@ -2,16 +2,24 @@ import React, { useState, useMemo } from "react";
 import { Button, ButtonGroup, Form } from "react-bootstrap";
 import { ExcelUploadModal } from "../modals/ExcelUploadModal";
 import { AddModifyModal } from "../modals/AddModifyModal";
+import FileUploadModal from "../modals/FileUploadModal";
+import FileDownloadModal from "../modals/FileDownloadModal";
+import FileManageModal from "../modals/FileManageModal";
 import { DataTable } from "../components/DataTable";
 import { useVendorManagement } from "../hooks/useVendorManagement";
 import { vendorConfig } from "../api/config";
+import { uploadVendorFile } from "../api/vendorApi";
 
 function VendorPage() {
   const [showExcelModal, setShowExcelModal] = useState(false);
+  const [showAddModifyModal, setShowAddModifyModal] = useState(false);
+  const [showFileUploadModal, setShowFileUploadModal] = useState(false);
+  const [showFileDownloadModal, setShowFileDownloadModal] = useState(false);
+  const [showFileManageModal, setShowFileManageModal] = useState(false);
+  const [currentVendor, setCurrentVendor] = useState({});
+  const [uploadTargetId, setUploadTargetId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [showAddModifyModal, setShowAddModifyModal] = useState(false);
-  const [currentVendor, setCurrentVendor] = useState({});
   const itemsPerPage = 10;
 
   const {
@@ -30,16 +38,13 @@ function VendorPage() {
         vendor[field]?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
-  
-    // 👉 업체명 기준 정렬
+
     return filtered.sort((a, b) => {
       const nameA = a.company_name?.toLowerCase() || "";
       const nameB = b.company_name?.toLowerCase() || "";
       return nameA.localeCompare(nameB);
     });
   }, [vendors, searchTerm]);
-  
- 
 
   const paginatedVendors = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -53,12 +58,37 @@ function VendorPage() {
     setCurrentVendor({});
     setShowAddModifyModal(true);
   };
-  
+
   const handleOpenEditModal = (vendor) => {
     setCurrentVendor(vendor);
     setShowAddModifyModal(true);
   };
-  
+
+  const handleUploadClick = (vendor) => {
+    setUploadTargetId(vendor.id);
+    setShowFileUploadModal(true);
+  };
+
+  const handleDownloadClick = (vendor) => {
+    setCurrentVendor(vendor);
+    setShowFileDownloadModal(true);
+  };
+
+  const handleManageClick = (vendor) => {
+    setCurrentVendor(vendor);
+    setShowFileManageModal(true);
+  };
+
+  const handleFileUpload = async (file) => {
+    if (!uploadTargetId) return;
+    try {
+      await uploadVendorFile(uploadTargetId, file);
+      alert("파일 업로드 성공!");
+    } catch (err) {
+      console.error("업로드 실패:", err);
+      alert("파일 업로드 실패");
+    }
+  };
 
   return (
     <div>
@@ -87,9 +117,12 @@ function VendorPage() {
 
       <DataTable
         data={paginatedVendors}
-        config={vendorConfig}
+        config={{ ...vendorConfig, enableFile: true }}
         onEdit={handleOpenEditModal}
         onDelete={handleDeleteVendor}
+        onUploadClick={handleUploadClick}
+        onDownloadClick={handleDownloadClick}
+        onManageClick={handleManageClick}
       />
 
       <div className="pagination-controls">
@@ -119,13 +152,32 @@ function VendorPage() {
         modalType="vendor"
       />
 
-
       <ExcelUploadModal
         show={showExcelModal}
         handleClose={() => setShowExcelModal(false)}
         handleUpload={(file) => handleExcelUpload(file, () => setShowExcelModal(false))}
         uploadError={uploadError}
         fileInputRef={fileInputRef}
+      />
+
+      <FileUploadModal
+        show={showFileUploadModal}
+        handleClose={() => setShowFileUploadModal(false)}
+        onUpload={handleFileUpload}
+      />
+
+      <FileDownloadModal
+        show={showFileDownloadModal}
+        handleClose={() => setShowFileDownloadModal(false)}
+        vendorId={currentVendor.id}
+        vendorName={currentVendor.company_name}
+      />
+
+      <FileManageModal
+        show={showFileManageModal}
+        handleClose={() => setShowFileManageModal(false)}
+        vendorId={currentVendor.id}
+        vendorName={currentVendor.company_name}
       />
     </div>
   );
