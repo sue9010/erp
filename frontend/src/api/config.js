@@ -20,32 +20,40 @@ export const productConfig = {
     { key: "price", header: "가격", format: (value) => `${(value ?? 0).toLocaleString()}원`, align: "right" },
     { key: "stock", header: "재고", format: (value) => `${(value ?? 0).toLocaleString()}개`, align: "right" },
     { key: "note", header: "비고", align: "center" },
-    { key: "edit", header: "수정", align: "center" },
-    { key: "delete", header: "삭제", align: "center" }
   ]
 };
 
 export const vendorConfig = {
   title: "공급업체 목록",
   fields: [
-    { key: 'company_name', label: '업체명', required: true },
-    { key: 'contact_person', label: '담당자명', required: true },
-    { key: 'contact', label: '연락처', required: true },
-    { key: 'country', label: '국가', required: true },
-    { key: 'address', label: '주소', required: true },
-    { key: 'export_license_required', label: '수출허가필요여부', required: false },
-    { key: 'export_license_type', label: '수출허가구분', required: false },
-    { key: 'export_license_number', label: '수출허가번호', required: false },
-    { key: 'shipping_method', label: '운송방법', required: false },
-    { key: 'shipping_account', label: '운송계정', required: false },
-    { key: 'note', label: '비고', required: false }
+    { key: 'company_name', label: '업체명', type: 'text', required: true },
+    { key: 'contact_person', label: '담당자명', type: 'text', required: true },
+    { key: 'contact', label: '연락처', type: 'text', required: true },
+    { key: 'country', label: '국가', type: 'text', required: true },
+    { key: 'address', label: '주소', type: 'text', required: true },
+    { key: 'export_license_required', label: '수출허가필요여부', type: 'text', required: false },
+    { key: 'export_license_type', label: '수출허가구분', type: 'text', required: false },
+    { key: 'export_license_number', label: '수출허가번호', type: 'text', required: false },
+    { key: 'shipping_method', label: '운송방법', type: 'text', required: false },
+    { key: 'shipping_account', label: '운송계정', type: 'text', required: false },
+    { key: 'note', label: '비고', type: 'text', required: false }
   ],
-  searchFields: ['company_name', 'contact_person','contact','country', 'address','export_license_required','export_license_type','export_license_number','shipping_method','shipping_account', 'note'],
-  excelTemplate: {
-    headers: ["업체명","담당자명", "연락처","국가", "주소","수출허가필요여부","수출허가구분","수출허가번호","운송방법","운송계정", "비고"],
-    sampleData: [
-      ["공급업체 A","David", "010-1234-5678","대한민국", "서울시 강남구","불필요","해당 없음","해당 없음","택배","COX", "우수 공급업체"],
-      ["공급업체 B", "Kim","010-9876-5432","미국", "부산시 해운대구","필요","개별 수출 허가","해당 없음", ""]
-    ]
-  }
+  searchFields: [
+    'company_name', 'contact_person', 'contact', 'country', 'address',
+    'export_license_required', 'export_license_type', 'export_license_number',
+    'shipping_method', 'shipping_account', 'note'
+  ],
+  columns: [
+    { key: 'company_name', header: '업체명', align: 'center' },
+    { key: 'contact_person', header: '담당자명', align: 'center' },
+    { key: 'contact', header: '연락처', align: 'center' },
+    { key: 'country', header: '국가', align: 'center' },
+    { key: 'address', header: '주소', align: 'center' },
+    { key: 'export_license_required', header: '수출허가필요여부', align: 'center' },
+    { key: 'export_license_type', header: '수출허가구분', align: 'center' },
+    { key: 'export_license_number', header: '수출허가번호', align: 'center' },
+    { key: 'shipping_method', header: '운송방법', align: 'center' },
+    { key: 'shipping_account', header: '운송계정', align: 'center' },
+    { key: 'note', header: '비고', align: 'center' },
+  ]
 };

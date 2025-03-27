@@ -27,12 +27,21 @@ function ProductPage() {
   } = useProductManagement();
 
   const filteredProducts = useMemo(() => {
-    return products.filter((product) =>
+    const filtered = products.filter((product) =>
       productConfig.searchFields.some((field) =>
         product[field]?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
+  
+    // ✅ 정렬: 품목명 → 제품명 순 오름차순
+    return filtered.sort((a, b) => {
+      const categoryCompare = a.category.localeCompare(b.category);
+      if (categoryCompare !== 0) return categoryCompare;
+      return a.name.localeCompare(b.name);
+    });
   }, [products, searchTerm]);
+  
+  
 
   const paginatedProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;

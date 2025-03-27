@@ -20,17 +20,23 @@ function App() {
         <h1>📦 ERP 시스템</h1>
         <nav style={{ marginBottom: "1rem" }}>
           <Link to="/" style={{ marginRight: "1rem" }}>홈</Link>
+
+          {/* main */}
           <Link to="/vendors">업체 관리</Link>
           <Link to="/products" style={{ marginLeft: "1rem" }}>제품 관리</Link>
+          <Link to="/stock-history" style={{ marginLeft: "1rem" }}>재고 이력</Link>
+
+          {/* 판매관리 */}
           <Link to="/quotations" style={{ marginLeft: "1rem" }}>견적 관리</Link>
           <Link to="/orders" style={{ marginLeft: "1rem" }}>주문 관리</Link>
-          <Link to="/stock-history" style={{ marginLeft: "1rem" }}>재고 이력</Link>
-          <Link to="/purchases" style={{ marginLeft: "1rem" }}>입고 관리</Link>
           <Link to="/payments" style={{ marginLeft: "1rem" }}>입금 관리</Link>
           <Link to="/productions" style={{ marginLeft: "1rem" }}>생산 관리</Link>
           <Link to="/shipments" style={{ marginLeft: "1rem" }}>배송 관리</Link>
+
+          {/* 구매관리 */}
           <Link to="/purchase-orders" style={{ marginLeft: "1rem" }}>발주 관리</Link>
           <Link to="/remittances" style={{ marginLeft: "1rem" }}>송금 관리</Link>
+          <Link to="/purchases" style={{ marginLeft: "1rem" }}>입고 관리</Link>
         </nav>
 
         <Routes>

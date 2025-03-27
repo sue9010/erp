@@ -25,12 +25,20 @@ function VendorPage() {
   } = useVendorManagement();
 
   const filteredVendors = useMemo(() => {
-    return vendors.filter((vendor) =>
+    const filtered = vendors.filter((vendor) =>
       vendorConfig.searchFields.some((field) =>
         vendor[field]?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
+  
+    // 👉 업체명 기준 정렬
+    return filtered.sort((a, b) => {
+      const nameA = a.company_name?.toLowerCase() || "";
+      const nameB = b.company_name?.toLowerCase() || "";
+      return nameA.localeCompare(nameB);
+    });
   }, [vendors, searchTerm]);
+  
  
 
   const paginatedVendors = useMemo(() => {
