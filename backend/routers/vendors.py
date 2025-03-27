@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Path
 from pydantic import BaseModel
 from typing import List
 
@@ -10,14 +10,21 @@ class Vendor(BaseModel):
     contact: str
     country: str
     address: str
+    export_license_required: str
+    export_license_type: str
+    export_license_number: str
+    shipping_method: str 
+    shipping_account: str
     note: str = ""  # 기본값 설정
 
 class BulkVendorCreate(BaseModel):
     vendors: List[Vendor]
 
 vendors = [
-    {"id": 1, "company_name":"COX","contact_person": "David", "contact": "010-1234-5678", "country":"대한민국","address": "서울시 강남구", "note": "우수 공급업체"},
+    {"id": 1, "company_name":"COX","contact_person": "David", "contact": "010-1234-5678", "country":"대한민국","address": "서울시 강남구",
+    "export_license_required":"불필요","export_license_type":"해당 없음","export_license_number":"해당 없음","shipping_method":"택배","shipping_account":"COX", "note": "우수 공급업체"},
 ]
+
 
 def get_max_id():
     return max(v["id"] for v in vendors) if vendors else 0
@@ -59,6 +66,14 @@ def add_bulk_vendors(bulk_vendor: BulkVendorCreate):
         return {"message": "일부 공급업체 추가 실패", "errors": errors, "added": len(new_vendors)}
 
     return {"message": f"{len(new_vendors)}개의 공급업체가 추가되었습니다", "added": len(new_vendors)}
+
+@router.put("/vendors/{vendor_id}")
+def update_vendor(vendor_id: int, vendor: Vendor):
+    for v in vendors:
+        if v["id"] == vendor_id:
+            v.update(vendor.dict())
+            return {"message": "공급업체가 수정되었습니다", "vendor": v}
+    raise HTTPException(status_code=404, detail="공급업체를 찾을 수 없습니다")
 
 @router.delete("/vendors/{vendor_id}")
 def delete_vendor(vendor_id: int):

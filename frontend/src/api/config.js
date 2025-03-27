@@ -43,14 +43,22 @@ export const vendorConfig = {
     { key: 'contact', label: '연락처', required: true },
     { key: 'country', label: '국가', required: true },
     { key: 'address', label: '주소', required: true },
+    { key: 'export_license_required', label: '수출허가필요여부', required: false },
+    { key: 'export_license_type', label: '수출허가구분', required: false },
+    { key: 'export_license_number', label: '수출허가번호', required: false },
+    { key: 'shipping_method', label: '운송방법', required: false },
+    { key: 'shipping_account', label: '운송계정', required: false },    
     { key: 'note', label: '비고', required: false }
+
   ],
-  searchFields: ['company_name', 'contact_person','contact','country', 'address', 'note'],
+  searchFields: ['company_name', 'contact_person','contact','country', 'address','export_license_required','export_license_type',
+    'export_license_number','shipping_method','shipping_account', 'note'],
   excelTemplate: {
-    headers: ["업체명","담당자명", "연락처","국가", "주소", "비고"],
+    headers: ["업체명","담당자명", "연락처","국가", "주소","수출허가필요여부","수출허가구분","수출허가번호",
+      "운송방법","운송계정", "비고"],
     sampleData: [
-      ["공급업체 A","David", "010-1234-5678","대한민국", "서울시 강남구", "우수 공급업체"],
-      ["공급업체 B", "Kim","010-9876-5432","미국", "부산시 해운대구", ""]
+      ["공급업체 A","David", "010-1234-5678","대한민국", "서울시 강남구","불필요","해당 없음","해당 없음","택배","COX", "우수 공급업체"],
+      ["공급업체 B", "Kim","010-9876-5432","미국", "부산시 해운대구","필요","개별 수출 허가","해당 없음", ""]
     ]
   }
 };

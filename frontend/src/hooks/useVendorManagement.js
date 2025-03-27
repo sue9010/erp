@@ -81,26 +81,41 @@ export const useVendorManagement = () => {
   
       // 헤더 매핑
       const columnMapping = {
-        name: headerRow.findIndex((cell) => cell === "이름"),
+        company_name: headerRow.findIndex((cell) => cell === "업체명"),
+        contact_person: headerRow.findIndex((cell) => cell === "담당자명"),
         contact: headerRow.findIndex((cell) => cell === "연락처"),
+        country: headerRow.findIndex((cell) => cell === "국가"),
         address: headerRow.findIndex((cell) => cell === "주소"),
+        export_license_required: headerRow.findIndex((cell) => cell === "수출허가필요여부"),
+        export_license_type: headerRow.findIndex((cell) => cell === "수출허가구분"),
+        export_license_number: headerRow.findIndex((cell) => cell === "수출허가번호"),
+        shipping_method: headerRow.findIndex((cell) => cell === "운송방법"),
+        shipping_account: headerRow.findIndex((cell) => cell === "운송계정"),
         note: headerRow.findIndex((cell) => cell === "비고"),
       };
-  
+
       // 필수 필드 검증
-      ["name", "contact", "address"].forEach((key) => {
+      ["company_name", "contact_person", "contact", "country", "address"].forEach((key) => {
         if (columnMapping[key] === -1) {
           throw new Error(`[${key}] 열이 누락되었습니다.`);
         }
       });
-  
-      // 데이터 추출 (헤더 제외)
-      const vendors = rows.slice(1).map((row, index) => ({
-        name: row[columnMapping.name]?.toString().trim() || "",
+
+      // 데이터 추출
+      const vendors = rows.slice(1).map((row) => ({
+        company_name: row[columnMapping.company_name]?.toString().trim() || "",
+        contact_person: row[columnMapping.contact_person]?.toString().trim() || "",
         contact: row[columnMapping.contact]?.toString().trim() || "",
+        country: row[columnMapping.country]?.toString().trim() || "",
         address: row[columnMapping.address]?.toString().trim() || "",
+        export_license_required: row[columnMapping.export_license_required]?.toString().trim() || "",
+        export_license_type: row[columnMapping.export_license_type]?.toString().trim() || "",
+        export_license_number: row[columnMapping.export_license_number]?.toString().trim() || "",
+        shipping_method: row[columnMapping.shipping_method]?.toString().trim() || "",
+        shipping_account: row[columnMapping.shipping_account]?.toString().trim() || "",
         note: row[columnMapping.note]?.toString().trim() || "",
       }));
+
   
       // 서버로 전송
       await axios.post(`${API_BASE}/vendors/bulk`, { vendors });
