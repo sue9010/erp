@@ -120,17 +120,34 @@ export const useVendorManagement = () => {
   };
 
   const handleVendorFileUpload = async (vendorId, files) => {
-    const fileList = Array.isArray(files) ? files : [files]; // 단일 또는 복수 허용
-    try {
-      for (const file of fileList) {
+    const fileList = Array.isArray(files) ? files : [files];
+    let successCount = 0;
+    const failedFiles = [];
+  
+    for (const file of fileList) {
+      try {
         await uploadVendorFile(vendorId, file);
+        successCount += 1;
+      } catch (err) {
+        console.error(`파일 업로드 실패: ${file.name}`, err);
+        failedFiles.push(file.name);
       }
-      alert("파일 업로드 완료!");
-    } catch (err) {
-      console.error("파일 업로드 중 오류:", err);
-      alert("파일 업로드 실패!");
+    }
+  
+    let message = "";
+    if (successCount > 0) {
+      message += `${successCount}개 파일 업로드 성공!`;
+    }
+    if (failedFiles.length > 0) {
+      message += `\n업로드 실패 파일: ${failedFiles.join(", ")}`;
+    }
+  
+    if (message) {
+      alert(message);
     }
   };
+  
+  
 
   const handleVendorFileDownload = async (fileId) => {
     try {

@@ -6,17 +6,16 @@ const FileUploadModal = ({ show, handleClose, onUpload }) => {
   const fileInputRef = useRef();
 
   const handleFileChange = (e) => {
-    setSelectedFiles([...e.target.files]); // multiple 선택한 파일들을 배열로 저장
+    setSelectedFiles([...e.target.files]);
   };
 
   const handleUpload = () => {
     if (selectedFiles.length && onUpload) {
-      selectedFiles.forEach(file => onUpload(file)); // ✅ 이렇게 수정!
+      onUpload(selectedFiles); // ✅ 한 번에 배열로 전달
       setSelectedFiles([]);
       handleClose();
     }
   };
-  
 
   return (
     <Modal show={show} onHide={handleClose}>
@@ -40,7 +39,11 @@ const FileUploadModal = ({ show, handleClose, onUpload }) => {
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={handleClose}>취소</Button>
-        <Button variant="primary" onClick={handleUpload} disabled={selectedFiles.length === 0}>
+        <Button
+          variant="primary"
+          onClick={handleUpload}
+          disabled={selectedFiles.length === 0}
+        >
           업로드 ({selectedFiles.length}개)
         </Button>
       </Modal.Footer>

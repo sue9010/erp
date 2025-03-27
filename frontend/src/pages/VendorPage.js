@@ -27,6 +27,7 @@ function VendorPage() {
     handleDeleteVendor,
     handleVendorSubmit,
     handleExcelUpload,
+    handleVendorFileUpload,
     downloadExcel,
     uploadError,
     fileInputRef,
@@ -79,16 +80,16 @@ function VendorPage() {
     setShowFileManageModal(true);
   };
 
-  const handleFileUpload = async (file) => {
+  const handleFileUpload = async (files) => {
     if (!uploadTargetId) return;
     try {
-      await uploadVendorFile(uploadTargetId, file);
-      alert("파일 업로드 성공!");
+      await handleVendorFileUpload(uploadTargetId, files); // ✅ 배열 전체를 한 번에 전달
     } catch (err) {
       console.error("업로드 실패:", err);
       alert("파일 업로드 실패");
     }
   };
+  
 
   return (
     <div>
