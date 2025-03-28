@@ -32,22 +32,56 @@ function QuotationPage() {
     downloadExcel,
   } = useQuotationManagement();
 
-  const filteredQuotations = useMemo(() => {
-    const filtered = quotations.filter((q) =>
-      quotationConfig.searchFields.some((field) =>
-        q[field]?.toLowerCase().includes(searchTerm.toLowerCase())
+  const flattenedQuotations = useMemo(() => {
+    const rows = [];
+
+    quotations.forEach((quotation) => {
+      quotation.products?.forEach((product, pIndex) => {
+        const productRow = {
+          ...quotation,
+          category: product.category ?? '',
+          product_name: product.product_name,
+          is_option: false,
+          quantity: product.quantity,
+          unit_price: product.unit_price,
+          total_price: product.quantity * product.unit_price,
+        };
+        productRow.row_id = `quotation-${quotation.id}-product-${pIndex}`;
+        console.log("📦 raw product:", product);
+        console.log("🧱 flattened row:", productRow);
+        rows.push(productRow);
+
+        product.options?.forEach((opt, oIndex) => {
+          const optionRow = {
+            ...quotation,
+            category: opt.category ?? '',
+            product_name: opt.product_name,
+            is_option: true,
+            quantity: opt.quantity,
+            unit_price: opt.unit_price,
+            total_price: opt.quantity * opt.unit_price,
+          };
+          optionRow.row_id = `quotation-${quotation.id}-product-${pIndex}-option-${oIndex}`;
+          rows.push(optionRow);
+        });
+      });
+    });
+
+    return rows
+      .filter((row) =>
+        quotationConfig.searchFields.some((field) =>
+          row[field]?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
       )
-    );
-    return filtered.sort((a, b) => b.id - a.id);
+      .sort((a, b) => b.id - a.id);
   }, [quotations, searchTerm]);
 
   const paginatedQuotations = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredQuotations.slice(startIndex, endIndex);
-  }, [filteredQuotations, currentPage]);
+    return flattenedQuotations.slice(startIndex, startIndex + itemsPerPage);
+  }, [flattenedQuotations, currentPage]);
 
-  const totalPages = Math.ceil(filteredQuotations.length / itemsPerPage);
+  const totalPages = Math.ceil(flattenedQuotations.length / itemsPerPage);
 
   const handleOpenAddModifyModal = (quotation = null) => {
     const defaultQuotation = quotationConfig.fields.reduce((acc, field) => {
@@ -90,7 +124,7 @@ function QuotationPage() {
         <Button variant="secondary" onClick={() => setShowExcelModal(true)}>
           엑셀로 일괄 등록
         </Button>
-        <Button variant="success" onClick={() => downloadExcel(filteredQuotations)}>
+        <Button variant="success" onClick={() => downloadExcel(flattenedQuotations)}>
           엑셀로 다운로드
         </Button>
       </ButtonGroup>
@@ -98,6 +132,7 @@ function QuotationPage() {
       <DataTable
         data={paginatedQuotations}
         config={{ ...quotationConfig, enableFile: true }}
+        keyField="row_id"
         onEdit={handleOpenAddModifyModal}
         onDelete={handleDelete}
         onUploadClick={(row) => { setCurrentQuotation(row); setShowFileUploadModal(true); }}

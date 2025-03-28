@@ -116,6 +116,32 @@ export const quotationConfig = {
     { key: 'customer_name', header: '고객사', align: 'center' },
     { key: 'quotation_date', header: '견적일', align: 'center' },
     { key: 'due_date', header: '납기일', align: 'center' },
+    { key: 'category', header: '카테고리', align: 'center' },
+    { key: 'product_name', header: '제품명', align: 'center' },
+    {
+      key: 'is_option',
+      header: '옵션 여부',
+      align: 'center',
+      format: (v) => (v ? '옵션' : '기본'),
+    },
+    {
+      key: 'quantity',
+      header: '수량',
+      align: 'right',
+      format: (v) => `${v}개`,
+    },
+    {
+      key: 'unit_price',
+      header: '단가',
+      align: 'right',
+      format: (v) => `${v.toLocaleString()}원`,
+    },
+    {
+      key: 'total_price',
+      header: '합계',
+      align: 'right',
+      format: (v) => `${v.toLocaleString()}원`,
+    },
     {
       key: 'total_amount_ex_vat',
       header: '공급가액',
@@ -131,6 +157,7 @@ export const quotationConfig = {
     { key: 'status', header: '상태', align: 'center' }
   ]
 };
+
 
 
 export const paymentConfig = {

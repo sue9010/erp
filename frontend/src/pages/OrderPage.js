@@ -40,7 +40,7 @@ function OrderPage() {
         const productRow = {
           ...order,
           category: product.category,
-          name: product.name,
+          product_name: product.name,
           is_option: false,
           quantity: product.quantity,
           unit_price: product.unit_price,
@@ -56,7 +56,7 @@ function OrderPage() {
           const optionRow = {
             ...order,
             category: opt.category,
-            name: opt.name,
+            product_name: opt.name,
             is_option: true,
             quantity: opt.quantity,
             unit_price: opt.unit_price,
