@@ -1,35 +1,53 @@
 import React from 'react';
 import { Table, Button } from 'react-bootstrap';
 
-export const DataTable = ({ data, config, onEdit, onDelete, onUploadClick, onDownloadClick, onManageClick }) => {
+export const DataTable = ({
+  data,
+  config,
+  onEdit,
+  onDelete,
+  onUploadClick,
+  onDownloadClick,
+  onManageClick
+}) => {
   return (
     <Table striped bordered hover>
       <thead>
         <tr>
-          {config.columns.map((col) => (
-            <th key={col.key} style={{ textAlign: col.align || "left" }}>
-              {col.header}
-            </th>
-          ))}
+          {config.columns.map((col, colIndex) => {
+            const thKey = `${String(col.key)}-${colIndex}`;
+            // console.log('TH key:', thKey);
+            return (
+              <th key={thKey} style={{ textAlign: col.align || "left" }}>
+                {col.header}
+              </th>
+            );
+          })}
           <th style={{ textAlign: "center" }}>작업</th>
           {config.enableFile && <th style={{ textAlign: "center" }}>파일</th>}
         </tr>
       </thead>
       <tbody>
-        {data.map((item, index) => {
+        {data.map((item, rowIndex) => {
           const rowKey =
-            config.keyField && item[config.keyField]
-              ? item[config.keyField]
-              : item.id || `${item.name}-${index}`;
+            (config.keyField && item[config.keyField]) ??
+            `fallback-${item.id ?? 'unknown'}-${rowIndex}`;
+          
+
+          // console.log('ROW key:', rowKey);
+
           return (
             <tr key={rowKey}>
-              {config.columns.map((col) => (
-                <td key={col.key} style={{ textAlign: col.align || "left" }}>
-                  {col.format ? col.format(item[col.key]) : item[col.key]}
-                </td>
-              ))}
+              {config.columns.map((col, colIndex) => {
+                const tdKey = `${String(col.key)}-${colIndex}`;
+                // console.log('TD key:', tdKey, 'Value:', item[col.key]);
+                return (
+                  <td key={tdKey} style={{ textAlign: col.align || "left" }}>
+                    {col.format ? col.format(item[col.key]) : item[col.key]}
+                  </td>
+                );
+              })}
 
-              {/* 수정/삭제 */}
               <td style={{ textAlign: "center" }}>
                 <Button
                   variant="info"
@@ -48,7 +66,6 @@ export const DataTable = ({ data, config, onEdit, onDelete, onUploadClick, onDow
                 </Button>
               </td>
 
-              {/* 파일 관리 영역 */}
               {config.enableFile && (
                 <td style={{ textAlign: "center" }}>
                   <Button

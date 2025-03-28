@@ -1,4 +1,3 @@
-// src/pages/OrderPage.js
 import React, { useState, useMemo } from "react";
 import { Button, ButtonGroup, Form } from "react-bootstrap";
 import { AddModifyModal } from "../modals/AddModifyModal";
@@ -34,11 +33,11 @@ function OrderPage() {
 
   const flattenedOrders = useMemo(() => {
     const rows = [];
-    let rowIndex = 0;
+
     orders.forEach((order) => {
       order.products?.forEach((product, pIndex) => {
-        rows.push({
-          row_id: `order-${order.id}-product-${pIndex}`,
+        // 기본 제품
+        const productRow = {
           ...order,
           category: product.category,
           name: product.name,
@@ -46,10 +45,15 @@ function OrderPage() {
           quantity: product.quantity,
           unit_price: product.unit_price,
           total_price: product.quantity * product.unit_price,
-        });
+          row_id: `order-${order.id}-product-${pIndex}`,
+        };
+        productRow.row_id = `order-${order.id}-product-${pIndex}`;
+        // console.log("flattened row:", productRow);
+        rows.push(productRow);
+
+        // 옵션들
         product.options?.forEach((opt, oIndex) => {
-          rows.push({
-            row_id: `order-${order.id}-product-${pIndex}-option-${oIndex}`,
+          const optionRow = {
             ...order,
             category: opt.category,
             name: opt.name,
@@ -57,11 +61,15 @@ function OrderPage() {
             quantity: opt.quantity,
             unit_price: opt.unit_price,
             total_price: opt.quantity * opt.unit_price,
-          });
+            row_id: `order-${order.id}-product-${pIndex}-option-${oIndex}`,
+          };
+          optionRow.row_id = `order-${order.id}-product-${pIndex}-option-${oIndex}`;
+          // console.log("flattened row:", optionRow);
+          rows.push(optionRow);
         });
       });
     });
-  
+
     return rows
       .filter((row) =>
         orderConfig.searchFields.some((field) =>
@@ -70,7 +78,6 @@ function OrderPage() {
       )
       .sort((a, b) => b.id - a.id);
   }, [orders, searchTerm]);
-  
 
   const paginatedOrders = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -130,12 +137,20 @@ function OrderPage() {
         config={{ ...orderConfig, enableFile: true }}
         onEdit={handleOpenAddModifyModal}
         onDelete={handleDelete}
-        onUploadClick={(row) => { setCurrentOrder(row); setShowFileUploadModal(true); }}
-        onDownloadClick={(row) => { setCurrentOrder(row); setShowFileDownloadModal(true); }}
-        onManageClick={(row) => { setCurrentOrder(row); setShowFileManageModal(true); }}
-        keyField="row_id" // ✅ 이거 추가!
+        onUploadClick={(row) => {
+          setCurrentOrder(row);
+          setShowFileUploadModal(true);
+        }}
+        onDownloadClick={(row) => {
+          setCurrentOrder(row);
+          setShowFileDownloadModal(true);
+        }}
+        onManageClick={(row) => {
+          setCurrentOrder(row);
+          setShowFileManageModal(true);
+        }}
+        keyField="row_id"
       />
-
 
       <div className="pagination-controls">
         <Button

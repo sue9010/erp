@@ -83,35 +83,14 @@ export const orderConfig = {
     { key: "order_date", header: "주문일", align: "center" },
     { key: "due_date", header: "납기일", align: "center" },
     { key: "category", header: "카테고리", align: "center" },
-    { key: "name", header: "제품명", align: "center" },
-    {
-      key: "is_option",
-      header: "옵션 여부",
-      align: "center",
-      format: (v) => (v ? "옵션" : "기본"),
-    },
-    {
-      key: "quantity",
-      header: "수량",
-      align: "right",
-      format: (v) => `${v}개`,
-    },
-    {
-      key: "unit_price",
-      header: "단가",
-      align: "right",
-      format: (v) => `${v.toLocaleString()}원`,
-    },
-    {
-      key: "total_price",
-      header: "합계",
-      align: "right",
-      format: (v) => `${v.toLocaleString()}원`,
-    },
+    { key: "product_name", header: "제품명", align: "center" },
+    { key: "is_option", header: "옵션 여부", align: "center", format: (v) => (v ? "옵션" : "기본") },
+    { key: "quantity", header: "수량", align: "right", format: (v) => `${v}개` },
+    { key: "unit_price", header: "단가", align: "right", format: (v) => `${v.toLocaleString()}원` },
+    { key: "total_price", header: "합계", align: "right", format: (v) => `${v.toLocaleString()}원` },
     { key: "status", header: "상태", align: "center" },
   ]
 };
-
 
 
 export const quotationConfig = {
@@ -125,7 +104,7 @@ export const quotationConfig = {
     {
       key: 'products',
       label: '제품 구성',
-      type: 'custom', // 제품 + 옵션 + 단가 테이블 UI
+      type: 'custom',
       required: true
     },
     { key: 'note', label: '비고' },
