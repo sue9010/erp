@@ -32,22 +32,48 @@ function OrderPage() {
     downloadExcel,
   } = useOrderManagement();
 
-  const filteredOrders = useMemo(() => {
-    const filtered = orders.filter((order) =>
-      orderConfig.searchFields.some((field) =>
-        order[field]?.toLowerCase().includes(searchTerm.toLowerCase())
+  const flattenedOrders = useMemo(() => {
+    const rows = [];
+    orders.forEach((order) => {
+      order.products?.forEach((product) => {
+        rows.push({
+          ...order,
+          category: product.category,
+          name: product.name,
+          is_option: false,
+          quantity: product.quantity,
+          unit_price: product.unit_price,
+          total_price: product.quantity * product.unit_price,
+        });
+        product.options?.forEach((opt) => {
+          rows.push({
+            ...order,
+            category: opt.category,
+            name: opt.name,
+            is_option: true,
+            quantity: opt.quantity,
+            unit_price: opt.unit_price,
+            total_price: opt.quantity * opt.unit_price,
+          });
+        });
+      });
+    });
+
+    return rows
+      .filter((row) =>
+        orderConfig.searchFields.some((field) =>
+          row[field]?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
       )
-    );
-    return filtered.sort((a, b) => b.id - a.id);
+      .sort((a, b) => b.id - a.id);
   }, [orders, searchTerm]);
 
   const paginatedOrders = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredOrders.slice(startIndex, endIndex);
-  }, [filteredOrders, currentPage]);
+    return flattenedOrders.slice(startIndex, startIndex + itemsPerPage);
+  }, [flattenedOrders, currentPage]);
 
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const totalPages = Math.ceil(flattenedOrders.length / itemsPerPage);
 
   const handleOpenAddModifyModal = (order = null) => {
     const defaultOrder = orderConfig.fields.reduce((acc, field) => {
@@ -90,7 +116,7 @@ function OrderPage() {
         <Button variant="secondary" onClick={() => setShowExcelModal(true)}>
           엑셀로 일괄 등록
         </Button>
-        <Button variant="success" onClick={() => downloadExcel(filteredOrders)}>
+        <Button variant="success" onClick={() => downloadExcel(flattenedOrders)}>
           엑셀로 다운로드
         </Button>
       </ButtonGroup>

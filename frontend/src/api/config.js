@@ -70,7 +70,7 @@ export const orderConfig = {
     {
       key: "products",
       label: "제품 구성",
-      type: "custom", // 테이블 + 옵션 UI
+      type: "custom",
       required: true,
     },
     { key: "note", label: "비고" },
@@ -78,27 +78,40 @@ export const orderConfig = {
   ],
   searchFields: ["po_number", "order_number", "vendor_name"],
   columns: [
-    { key: "id", header: "ID", align: "center" },
-    { key: "po_number", header: "PO 번호", align: "center" },
     { key: "order_number", header: "접수 번호", align: "center" },
     { key: "vendor_name", header: "공급업체", align: "center" },
     { key: "order_date", header: "주문일", align: "center" },
     { key: "due_date", header: "납기일", align: "center" },
+    { key: "category", header: "카테고리", align: "center" },
+    { key: "name", header: "제품명", align: "center" },
     {
-      key: "total_amount_ex_vat",
-      header: "공급가액",
-      align: "right",
-      format: (v) => `${(v ?? 0).toLocaleString()}원`,
+      key: "is_option",
+      header: "옵션 여부",
+      align: "center",
+      format: (v) => (v ? "옵션" : "기본"),
     },
     {
-      key: "total_amount_inc_vat",
-      header: "총액(VAT)",
+      key: "quantity",
+      header: "수량",
       align: "right",
-      format: (v) => `${(v ?? 0).toLocaleString()}원`,
+      format: (v) => `${v}개`,
+    },
+    {
+      key: "unit_price",
+      header: "단가",
+      align: "right",
+      format: (v) => `${v.toLocaleString()}원`,
+    },
+    {
+      key: "total_price",
+      header: "합계",
+      align: "right",
+      format: (v) => `${v.toLocaleString()}원`,
     },
     { key: "status", header: "상태", align: "center" },
-  ],
+  ]
 };
+
 
 
 export const quotationConfig = {
