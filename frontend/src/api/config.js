@@ -59,24 +59,66 @@ export const vendorConfig = {
 };
 
 export const orderConfig = {
-  title: "주문 목록",
+  title: "주문",
   enableFile: true,
   fields: [
-    { key: 'po_number', label: '발주 번호', required: true },
-    { key: 'order_number', label: '접수 번호', required: true },
-    { key: 'vendor_name', label: '고객사', required: true },
-    { key: 'order_date', label: '주문 날짜', type: 'date', required: true },
+    { key: "po_number", label: "PO 번호", required: true },
+    { key: "order_number", label: "접수 번호", required: true },
+    { key: "vendor_name", label: "공급업체명", required: true },
+    { key: "order_date", label: "주문일", type: "date", required: true },
+    { key: "due_date", label: "납기일", type: "date", required: true },
+    {
+      key: "products",
+      label: "제품 구성",
+      type: "custom", // 테이블 + 옵션 UI
+      required: true,
+    },
+    { key: "note", label: "비고" },
+    { key: "status", label: "상태", default: "접수" },
+  ],
+  searchFields: ["po_number", "order_number", "vendor_name"],
+  columns: [
+    { key: "id", header: "ID", align: "center" },
+    { key: "po_number", header: "PO 번호", align: "center" },
+    { key: "order_number", header: "접수 번호", align: "center" },
+    { key: "vendor_name", header: "공급업체", align: "center" },
+    { key: "order_date", header: "주문일", align: "center" },
+    { key: "due_date", header: "납기일", align: "center" },
+    {
+      key: "total_amount_ex_vat",
+      header: "공급가액",
+      align: "right",
+      format: (v) => `${(v ?? 0).toLocaleString()}원`,
+    },
+    {
+      key: "total_amount_inc_vat",
+      header: "총액(VAT)",
+      align: "right",
+      format: (v) => `${(v ?? 0).toLocaleString()}원`,
+    },
+    { key: "status", header: "상태", align: "center" },
+  ],
+};
+
+
+export const quotationConfig = {
+  title: "견적 목록",
+  enableFile: true,
+  fields: [
+    { key: 'quotation_number', label: '견적 번호', required: true },
+    { key: 'customer_name', label: '고객사', required: true },
+    { key: 'quotation_date', label: '견적일', type: 'date', required: true },
     { key: 'due_date', label: '납기일', type: 'date', required: true },
     { key: 'total_amount_ex_vat', label: '총 금액(VAT 미포함)', type: 'number', required: true },
     { key: 'total_amount_inc_vat', label: '총 금액(VAT 포함)', type: 'number', required: true },
     { key: 'note', label: '비고' },
     { key: 'status', label: '상태' }
   ],
-  searchFields: ['order_number', 'vendor_name', 'note', 'status'],
+  searchFields: ['quotation_number', 'customer_name', 'note', 'status'],
   columns: [
-    { key: 'order_number', header: '접수 번호', align: 'center' },
-    { key: 'vendor_name', header: '고객사', align: 'center' },
-    { key: 'order_date', header: '주문일', align: 'center' },
+    { key: 'quotation_number', header: '견적 번호', align: 'center' },
+    { key: 'customer_name', header: '고객사', align: 'center' },
+    { key: 'quotation_date', header: '견적일', align: 'center' },
     { key: 'due_date', header: '납기일', align: 'center' },
     {
       key: 'total_amount_inc_vat',
@@ -85,5 +127,73 @@ export const orderConfig = {
       format: (v) => `${(v ?? 0).toLocaleString()}원`,
     },
     { key: 'status', header: '상태', align: 'center' }
+  ]
+};
+
+export const paymentConfig = {
+  title: "입금 목록",
+  enableFile: true,
+  fields: [
+    { key: "order_id", label: "주문 ID", type: "text" }, // ⬅ string + optional
+    { key: "amount", label: "입금액", type: "number", required: true },
+    { key: "date", label: "입금일", type: "date", required: true },
+    { key: "depositor", label: "입금자", required: true },
+    { key: "note", label: "비고" }
+  ],
+  searchFields: ["depositor", "note", "order_id"],
+  columns: [
+    { key: "id", header: "ID", align: "center" },
+    { key: "order_id", header: "주문 ID", align: "center" },
+    {
+      key: "amount",
+      header: "입금액",
+      align: "right",
+      format: (v) => `${(v ?? 0).toLocaleString()}원`,
+    },
+    { key: "date", header: "입금일", align: "center" },
+    { key: "depositor", header: "입금자", align: "center" },
+    { key: "note", header: "비고", align: "center" }
+  ]
+};
+
+export const productionConfig = {
+  title: "생산 목록",
+  enableFile: true,
+  fields: [
+    {
+      key: "order_number",
+      label: "주문 번호",
+      type: "text",
+      required: true,
+      fetchDependent: true // 주문 선택 시 제품 목록 자동 조회에 사용
+    },
+    {
+      key: "scheduled_date",
+      label: "생산 예정일",
+      type: "date",
+      required: true
+    },
+    {
+      key: "items",
+      label: "생산 제품 및 시리얼",
+      type: "custom",
+      required: true
+    }
+  ],
+  searchFields: ["order_number"],
+  columns: [
+    { key: "id", header: "ID", align: "center" },
+    { key: "order_number", header: "주문 번호", align: "center" },
+    {
+      key: "scheduled_date",
+      header: "생산 예정일",
+      align: "center"
+    },
+    {
+      key: "items",
+      header: "제품 수",
+      align: "center",
+      format: (items) => `${items?.length ?? 0}종`
+    }
   ]
 };

@@ -1,76 +1,166 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE } from '../api/config'; // config.js 위치에 따라 경로 조정
+// src/pages/PaymentPage.js
+import React, { useState, useMemo } from "react";
+import { Button, ButtonGroup, Form } from "react-bootstrap";
+import { AddModifyModal } from "../modals/AddModifyModal";
+import { ExcelUploadModal } from "../modals/ExcelUploadModal";
+import FileUploadModal from "../modals/FileUploadModal";
+import FileManageModal from "../modals/FileManageModal";
+import FileDownloadModal from "../modals/FileDownloadModal";
+import { DataTable } from "../components/DataTable";
+import { usePaymentManagement } from "../hooks/usePaymentManagement";
+import { paymentConfig } from "../api/config";
+import { uploadFile } from "../api/fileApi";
 
 function PaymentPage() {
-  const [payments, setPayments] = useState([]);
-  const [form, setForm] = useState({
-    order_id: '',
-    amount: '',
-    date: '',
-    depositor: '',
-    note: '',
-  });
-  const [file, setFile] = useState(null);
+  const [showAddModifyModal, setShowAddModifyModal] = useState(false);
+  const [showExcelModal, setShowExcelModal] = useState(false);
+  const [showFileUploadModal, setShowFileUploadModal] = useState(false);
+  const [showFileManageModal, setShowFileManageModal] = useState(false);
+  const [showFileDownloadModal, setShowFileDownloadModal] = useState(false);
+  const [currentPayment, setCurrentPayment] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
-  const fetchPayments = async () => {
-    const res = await axios.get(`${API_BASE}/payments`);
-    setPayments(res.data);
+  const {
+    payments,
+    handleDelete,
+    handlePaymentSubmit,
+    handleExcelUpload,
+    uploadError,
+    fileInputRef,
+    downloadExcel,
+  } = usePaymentManagement();
+
+  const filteredPayments = useMemo(() => {
+    const filtered = payments.filter((p) =>
+      paymentConfig.searchFields.some((field) =>
+        p[field]?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+    return filtered.sort((a, b) => b.id - a.id);
+  }, [payments, searchTerm]);
+
+  const paginatedPayments = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredPayments.slice(startIndex, endIndex);
+  }, [filteredPayments, currentPage]);
+
+  const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+
+  const handleOpenAddModifyModal = (payment = null) => {
+    const defaultPayment = paymentConfig.fields.reduce((acc, field) => {
+      acc[field.key] = "";
+      return acc;
+    }, {});
+    setCurrentPayment(payment || defaultPayment);
+    setShowAddModifyModal(true);
   };
 
-  const handleSubmit = async () => {
-    const payload = { ...form, order_id: form.order_id ? parseInt(form.order_id) : null };
-    const res = await axios.post(`${API_BASE}/payments`, payload);
-    const paymentId = res.data.payment.id;
+  const handleCloseAddModifyModal = () => {
+    setShowAddModifyModal(false);
+  };
 
-    if (file) {
-      const formData = new FormData();
-      formData.append('file', file);
-      await axios.post(`${API_BASE}/payments/${paymentId}/upload`, formData);
+  const handleUploadFiles = async (files) => {
+    for (const file of files) {
+      await uploadFile("payments", currentPayment.id, file);
     }
-
-    setForm({ order_id: '', amount: '', date: '', depositor: '', note: '' });
-    setFile(null);
-    fetchPayments();
+    alert("파일 업로드가 완료되었습니다.");
+    setShowFileUploadModal(false);
   };
-
-  useEffect(() => {
-    fetchPayments();
-  }, []);
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">입금 등록</h2>
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        <input className="border p-2" placeholder="주문 ID (선택)" value={form.order_id}
-               onChange={e => setForm({ ...form, order_id: e.target.value })} />
-        <input className="border p-2" placeholder="금액" value={form.amount}
-               onChange={e => setForm({ ...form, amount: e.target.value })} />
-        <input type="date" className="border p-2" value={form.date}
-               onChange={e => setForm({ ...form, date: e.target.value })} />
-        <input className="border p-2" placeholder="입금자" value={form.depositor}
-               onChange={e => setForm({ ...form, depositor: e.target.value })} />
-        <input className="border p-2 col-span-2" placeholder="비고" value={form.note}
-               onChange={e => setForm({ ...form, note: e.target.value })} />
-        <input type="file" onChange={e => setFile(e.target.files[0])} />
-      </div>
-      <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={handleSubmit}>
-        입금 등록
-      </button>
+    <div>
+      <h2>{paymentConfig.title}</h2>
 
-      <h2 className="text-xl font-bold mt-8">입금 내역</h2>
-      <ul className="mt-2 space-y-2">
-        {payments.map(p => (
-          <li key={p.id} className="border p-2">
-            #{p.id} | {p.depositor} | {p.amount}원 | {p.date}
-            {p.file_path && (
-              <a href={`${API_BASE}/${p.file_path}`} className="ml-2 text-blue-600" target="_blank" rel="noreferrer">
-                입금증 보기
-              </a>
-            )}
-          </li>
-        ))}
-      </ul>
+      <Form.Group className="mb-3">
+        <Form.Control
+          type="text"
+          placeholder={`검색 (${paymentConfig.searchFields.join(", ")})`}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </Form.Group>
+
+      <ButtonGroup>
+        <Button variant="primary" onClick={() => handleOpenAddModifyModal()}>
+          입금 등록
+        </Button>
+        <Button variant="secondary" onClick={() => setShowExcelModal(true)}>
+          엑셀로 일괄 등록
+        </Button>
+        <Button variant="success" onClick={() => downloadExcel(filteredPayments)}>
+          엑셀로 다운로드
+        </Button>
+      </ButtonGroup>
+
+      <DataTable
+        data={paginatedPayments}
+        config={{ ...paymentConfig, enableFile: true }}
+        onEdit={handleOpenAddModifyModal}
+        onDelete={handleDelete}
+        onUploadClick={(row) => { setCurrentPayment(row); setShowFileUploadModal(true); }}
+        onDownloadClick={(row) => { setCurrentPayment(row); setShowFileDownloadModal(true); }}
+        onManageClick={(row) => { setCurrentPayment(row); setShowFileManageModal(true); }}
+      />
+
+      <div className="pagination-controls">
+        <Button
+          variant="secondary"
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage(currentPage - 1)}
+        >
+          이전
+        </Button>
+        <span>{currentPage} / {totalPages}</span>
+        <Button
+          variant="secondary"
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage(currentPage + 1)}
+        >
+          다음
+        </Button>
+      </div>
+
+      <AddModifyModal
+        show={showAddModifyModal}
+        handleClose={handleCloseAddModifyModal}
+        product={currentPayment}
+        handleSubmit={handlePaymentSubmit}
+        setProduct={setCurrentPayment}
+        config={paymentConfig}
+      />
+
+      <ExcelUploadModal
+        show={showExcelModal}
+        handleClose={() => setShowExcelModal(false)}
+        handleUpload={(file) => handleExcelUpload(file, () => setShowExcelModal(false))}
+        uploadError={uploadError}
+        fileInputRef={fileInputRef}
+      />
+
+      <FileUploadModal
+        show={showFileUploadModal}
+        handleClose={() => setShowFileUploadModal(false)}
+        onUpload={handleUploadFiles}
+      />
+
+      <FileManageModal
+        show={showFileManageModal}
+        handleClose={() => setShowFileManageModal(false)}
+        entity="payments"
+        entityId={currentPayment.id}
+        entityName={`입금-${currentPayment.id}`}
+      />
+
+      <FileDownloadModal
+        show={showFileDownloadModal}
+        handleClose={() => setShowFileDownloadModal(false)}
+        entity="payments"
+        entityId={currentPayment.id}
+        entityName={`입금-${currentPayment.id}`}
+      />
     </div>
   );
 }

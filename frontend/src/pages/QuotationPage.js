@@ -1,118 +1,166 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { API_BASE } from "../api/config"; // 경로 주의
+// src/pages/QuotationPage.js
+import React, { useState, useMemo } from "react";
+import { Button, ButtonGroup, Form } from "react-bootstrap";
+import { AddModifyModal } from "../modals/AddModifyModal";
+import { ExcelUploadModal } from "../modals/ExcelUploadModal";
+import FileUploadModal from "../modals/FileUploadModal";
+import FileManageModal from "../modals/FileManageModal";
+import FileDownloadModal from "../modals/FileDownloadModal";
+import { DataTable } from "../components/DataTable";
+import { useQuotationManagement } from "../hooks/useQuotationManagement";
+import { quotationConfig } from "../api/config";
+import { uploadFile } from "../api/fileApi";
 
 function QuotationPage() {
-  const [quotations, setQuotations] = useState([]);
-  const [newQuotation, setNewQuotation] = useState({
-    client: "",
-    date: "",
-    items: [{ product_name: "", quantity: 1, unit_price: 0 }]
-  });
+  const [showAddModifyModal, setShowAddModifyModal] = useState(false);
+  const [showExcelModal, setShowExcelModal] = useState(false);
+  const [showFileUploadModal, setShowFileUploadModal] = useState(false);
+  const [showFileManageModal, setShowFileManageModal] = useState(false);
+  const [showFileDownloadModal, setShowFileDownloadModal] = useState(false);
+  const [currentQuotation, setCurrentQuotation] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
-  useEffect(() => {
-    fetchQuotations();
-  }, []);
+  const {
+    quotations,
+    handleDelete,
+    handleQuotationSubmit,
+    handleExcelUpload,
+    uploadError,
+    fileInputRef,
+    downloadExcel,
+  } = useQuotationManagement();
 
-  const fetchQuotations = () => {
-    axios.get(`${API_BASE}/quotations`)
-      .then(res => setQuotations(res.data))
-      .catch(err => console.error("불러오기 실패:", err));
+  const filteredQuotations = useMemo(() => {
+    const filtered = quotations.filter((q) =>
+      quotationConfig.searchFields.some((field) =>
+        q[field]?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+    return filtered.sort((a, b) => b.id - a.id);
+  }, [quotations, searchTerm]);
+
+  const paginatedQuotations = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredQuotations.slice(startIndex, endIndex);
+  }, [filteredQuotations, currentPage]);
+
+  const totalPages = Math.ceil(filteredQuotations.length / itemsPerPage);
+
+  const handleOpenAddModifyModal = (quotation = null) => {
+    const defaultQuotation = quotationConfig.fields.reduce((acc, field) => {
+      acc[field.key] = "";
+      return acc;
+    }, {});
+    setCurrentQuotation(quotation || defaultQuotation);
+    setShowAddModifyModal(true);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    axios.post(`${API_BASE}/quotations`, newQuotation)
-      .then(() => {
-        alert("견적 등록 완료!");
-        setNewQuotation({
-          client: "",
-          date: "",
-          items: [{ product_name: "", quantity: 1, unit_price: 0 }]
-        });
-        fetchQuotations();
-      })
-      .catch(err => console.error("등록 실패:", err));
+  const handleCloseAddModifyModal = () => {
+    setShowAddModifyModal(false);
   };
 
-  const addItem = () => {
-    setNewQuotation({
-      ...newQuotation,
-      items: [...newQuotation.items, { product_name: "", quantity: 1, unit_price: 0 }]
-    });
-  };
-
-  const updateItem = (index, field, value) => {
-    const items = [...newQuotation.items];
-    items[index][field] = field === "quantity" || field === "unit_price" ? parseInt(value) : value;
-    setNewQuotation({ ...newQuotation, items });
+  const handleUploadFiles = async (files) => {
+    for (const file of files) {
+      await uploadFile("quotations", currentQuotation.id, file);
+    }
+    alert("파일 업로드가 완료되었습니다.");
+    setShowFileUploadModal(false);
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>📝 견적 목록</h1>
-      <ul>
-        {quotations.map((q) => (
-          <li key={q.id}>
-            {q.client} ({q.date}) - 총액: {q.total?.toLocaleString()}원
-            <ul>
-              {q.items.map((item, i) => (
-                <li key={i}>
-                  {item.product_name} / {item.quantity}개 / {item.unit_price.toLocaleString()}원
-                </li>
-              ))}
-            </ul>
-          </li>
-        ))}
-      </ul>
+    <div>
+      <h2>{quotationConfig.title}</h2>
 
-      <hr />
-      <h2>➕ 새 견적 등록</h2>
-      <form onSubmit={handleSubmit}>
-        <input
+      <Form.Group className="mb-3">
+        <Form.Control
           type="text"
-          placeholder="고객명"
-          value={newQuotation.client}
-          onChange={(e) => setNewQuotation({ ...newQuotation, client: e.target.value })}
-          required
+          placeholder={`검색 (${quotationConfig.searchFields.join(", ")})`}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <input
-          type="date"
-          value={newQuotation.date}
-          onChange={(e) => setNewQuotation({ ...newQuotation, date: e.target.value })}
-          required
-        />
+      </Form.Group>
 
-        <h3>📦 견적 항목</h3>
-        {newQuotation.items.map((item, index) => (
-          <div key={index} style={{ marginBottom: "1rem" }}>
-            <input
-              type="text"
-              placeholder="제품명"
-              value={item.product_name}
-              onChange={(e) => updateItem(index, "product_name", e.target.value)}
-              required
-            />
-            <input
-              type="number"
-              placeholder="수량"
-              value={item.quantity}
-              onChange={(e) => updateItem(index, "quantity", e.target.value)}
-              required
-            />
-            <input
-              type="number"
-              placeholder="단가"
-              value={item.unit_price}
-              onChange={(e) => updateItem(index, "unit_price", e.target.value)}
-              required
-            />
-          </div>
-        ))}
-        <button type="button" onClick={addItem}>+ 항목 추가</button>
-        <br /><br />
-        <button type="submit">견적 등록</button>
-      </form>
+      <ButtonGroup>
+        <Button variant="primary" onClick={() => handleOpenAddModifyModal()}>
+          견적 등록
+        </Button>
+        <Button variant="secondary" onClick={() => setShowExcelModal(true)}>
+          엑셀로 일괄 등록
+        </Button>
+        <Button variant="success" onClick={() => downloadExcel(filteredQuotations)}>
+          엑셀로 다운로드
+        </Button>
+      </ButtonGroup>
+
+      <DataTable
+        data={paginatedQuotations}
+        config={{ ...quotationConfig, enableFile: true }}
+        onEdit={handleOpenAddModifyModal}
+        onDelete={handleDelete}
+        onUploadClick={(row) => { setCurrentQuotation(row); setShowFileUploadModal(true); }}
+        onDownloadClick={(row) => { setCurrentQuotation(row); setShowFileDownloadModal(true); }}
+        onManageClick={(row) => { setCurrentQuotation(row); setShowFileManageModal(true); }}
+      />
+
+      <div className="pagination-controls">
+        <Button
+          variant="secondary"
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage(currentPage - 1)}
+        >
+          이전
+        </Button>
+        <span>{currentPage} / {totalPages}</span>
+        <Button
+          variant="secondary"
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage(currentPage + 1)}
+        >
+          다음
+        </Button>
+      </div>
+
+      <AddModifyModal
+        show={showAddModifyModal}
+        handleClose={handleCloseAddModifyModal}
+        product={currentQuotation}
+        handleSubmit={handleQuotationSubmit}
+        setProduct={setCurrentQuotation}
+        config={quotationConfig}
+      />
+
+      <ExcelUploadModal
+        show={showExcelModal}
+        handleClose={() => setShowExcelModal(false)}
+        handleUpload={(file) => handleExcelUpload(file, () => setShowExcelModal(false))}
+        uploadError={uploadError}
+        fileInputRef={fileInputRef}
+      />
+
+      <FileUploadModal
+        show={showFileUploadModal}
+        handleClose={() => setShowFileUploadModal(false)}
+        onUpload={handleUploadFiles}
+      />
+
+      <FileManageModal
+        show={showFileManageModal}
+        handleClose={() => setShowFileManageModal(false)}
+        entity="quotations"
+        entityId={currentQuotation.id}
+        entityName={currentQuotation.quotation_number || "견적"}
+      />
+
+      <FileDownloadModal
+        show={showFileDownloadModal}
+        handleClose={() => setShowFileDownloadModal(false)}
+        entity="quotations"
+        entityId={currentQuotation.id}
+        entityName={currentQuotation.quotation_number || "견적"}
+      />
     </div>
   );
 }

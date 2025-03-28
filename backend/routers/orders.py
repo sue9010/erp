@@ -1,3 +1,5 @@
+# backend/routers/orders.py
+
 import os
 import io
 import re
@@ -16,6 +18,13 @@ router = APIRouter()
 UPLOAD_DIR = "uploaded_order_files"
 
 # --- 데이터 모델 ---
+class ProductItem(BaseModel):
+    product_name: str
+    quantity: int
+    options: Optional[List["ProductItem"]] = []  # 재귀적 구조
+
+ProductItem.update_forward_refs()
+
 class Order(BaseModel):
     po_number: str
     order_number: str
@@ -24,6 +33,7 @@ class Order(BaseModel):
     due_date: date
     total_amount_ex_vat: float
     total_amount_inc_vat: float
+    products: Optional[List[ProductItem]] = []  # ✅ 제품 + 옵션 구조 포함
     note: Optional[str] = ""
     status: Optional[str] = "접수"
 
@@ -41,6 +51,20 @@ orders = [
         "due_date": "2025-04-10",
         "total_amount_ex_vat": 10000000,
         "total_amount_inc_vat": 11000000,
+        "products": [
+            {
+                "product_name": "열화상 카메라 모듈",
+                "quantity": 3,
+                "options": [
+                    { "product_name": "M 12mm-motor", "quantity": 3 }
+                ]
+            },
+            {
+                "product_name": "렌즈 모듈",
+                "quantity": 2,
+                "options": []
+            }
+        ],
         "note": "빠른 납기 요청",
         "status": "접수"
     }
@@ -57,6 +81,16 @@ def find_by_order_number(order_number: str):
 @router.get("/orders")
 def get_orders():
     return orders
+
+@router.get("/orders/by-number/{order_number}")
+def get_order_by_number(order_number: str):
+    order = find_by_order_number(order_number)
+    if not order:
+        raise HTTPException(status_code=404, detail="해당 주문이 존재하지 않습니다.")
+    return {
+        "order_number": order["order_number"],
+        "products": order.get("products", [])
+    }
 
 @router.post("/orders")
 def add_order(order: Order):
