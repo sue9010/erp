@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Button, ListGroup, Spinner } from "react-bootstrap";
-import api from "../api/axiosConfig";
+import {
+  fetchFiles,
+  deleteFile,
+} from "../api/fileApi";
 
 const FileManageModal = ({ entity = "vendors", entityId, entityName, show, handleClose }) => {
   const [fileList, setFileList] = useState([]);
@@ -15,8 +18,8 @@ const FileManageModal = ({ entity = "vendors", entityId, entityName, show, handl
   const fetchFileList = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/${entity}/${entityId}/files`);
-      setFileList(response.data);
+      const data = await fetchFiles(entity, entityId);
+      setFileList(data);
     } catch (err) {
       console.error("파일 목록 불러오기 실패:", err);
       alert("파일 목록을 불러오는 데 실패했습니다.");
@@ -28,7 +31,7 @@ const FileManageModal = ({ entity = "vendors", entityId, entityName, show, handl
   const handleDelete = async (fileId) => {
     if (!window.confirm("정말 이 파일을 삭제하시겠습니까?")) return;
     try {
-      await api.delete(`/files/${fileId}`);
+      await deleteFile(fileId);
       setFileList((prev) => prev.filter((f) => f.file_id !== fileId));
     } catch (err) {
       console.error("파일 삭제 실패:", err);

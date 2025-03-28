@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Button, ListGroup, Spinner } from "react-bootstrap";
-import api from "../api/axiosConfig";
+import {
+  fetchFiles,
+  downloadFile,
+  downloadAllFiles,
+} from "../api/fileApi";
 
 const FileDownloadModal = ({ entity = "vendors", entityId, entityName, show, handleClose }) => {
   const [fileList, setFileList] = useState([]);
@@ -15,8 +19,8 @@ const FileDownloadModal = ({ entity = "vendors", entityId, entityName, show, han
   const fetchFileList = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/${entity}/${entityId}/files`);
-      setFileList(response.data);
+      const data = await fetchFiles(entity, entityId);
+      setFileList(data);
     } catch (err) {
       console.error("파일 목록 불러오기 실패:", err);
       alert("파일 목록을 불러오는 데 실패했습니다.");
@@ -27,10 +31,8 @@ const FileDownloadModal = ({ entity = "vendors", entityId, entityName, show, han
 
   const handleDownload = async (fileId, originalName) => {
     try {
-      const response = await api.get(`/files/${fileId}`, {
-        responseType: "blob",
-      });
-      const url = window.URL.createObjectURL(response.data);
+      const blob = await downloadFile(fileId);
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = originalName;
@@ -43,10 +45,8 @@ const FileDownloadModal = ({ entity = "vendors", entityId, entityName, show, han
 
   const handleDownloadAll = async () => {
     try {
-      const response = await api.get(`/${entity}/${entityId}/files/download-all`, {
-        responseType: "blob",
-      });
-      const url = window.URL.createObjectURL(response.data);
+      const blob = await downloadAllFiles(entity, entityId);
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = `${entityName}_첨부파일.zip`;

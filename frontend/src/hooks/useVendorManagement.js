@@ -4,7 +4,12 @@ import { API_BASE } from "../api/config";
 import * as XLSX from "xlsx";
 import readXlsxFile from 'read-excel-file';
 import { vendorConfig } from "../api/config";
-import { uploadVendorFile, downloadVendorFile } from "../api/vendorApi";
+
+// ✅ vendorApi 대신 fileApi 사용
+import {
+  uploadFile,
+  downloadFile
+} from "../api/fileApi";
 
 export const useVendorManagement = () => {
   const [vendors, setVendors] = useState([]);
@@ -119,21 +124,22 @@ export const useVendorManagement = () => {
     XLSX.writeFile(workbook, "vendors.xlsx");
   };
 
+  // ✅ fileApi 활용한 통합 업로드
   const handleVendorFileUpload = async (vendorId, files) => {
     const fileList = Array.isArray(files) ? files : [files];
     let successCount = 0;
     const failedFiles = [];
-  
+
     for (const file of fileList) {
       try {
-        await uploadVendorFile(vendorId, file);
+        await uploadFile("vendors", vendorId, file);
         successCount += 1;
       } catch (err) {
         console.error(`파일 업로드 실패: ${file.name}`, err);
         failedFiles.push(file.name);
       }
     }
-  
+
     let message = "";
     if (successCount > 0) {
       message += `${successCount}개 파일 업로드 성공!`;
@@ -141,17 +147,15 @@ export const useVendorManagement = () => {
     if (failedFiles.length > 0) {
       message += `\n업로드 실패 파일: ${failedFiles.join(", ")}`;
     }
-  
+
     if (message) {
       alert(message);
     }
   };
-  
-  
 
   const handleVendorFileDownload = async (fileId) => {
     try {
-      const blob = await downloadVendorFile(fileId);
+      const blob = await downloadFile(fileId);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;

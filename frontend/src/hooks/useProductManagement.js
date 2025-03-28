@@ -5,6 +5,15 @@ import readXlsxFile from "read-excel-file";
 import * as XLSX from 'xlsx';
 import { productConfig } from "../api/config";
 
+// ✅ fileApi 통합 import
+import {
+  uploadFile,
+  downloadFile,
+  fetchFiles,
+  deleteFile,
+  downloadAllFiles,
+} from "../api/fileApi";
+
 export const useProductManagement = () => {
   const [products, setProducts] = useState([]);
   const [uploadError, setUploadError] = useState("");
@@ -72,33 +81,33 @@ export const useProductManagement = () => {
       setUploadError("파일을 선택해주세요.");
       return;
     }
-  
+
     try {
       const rows = await readXlsxFile(file);
-  
+
       if (!rows || rows.length < 2) {
         throw new Error("유효한 데이터가 없습니다. 파일을 확인해주세요.");
       }
-  
+
       const headerRow = rows[0];
       if (!headerRow || headerRow.length === 0) {
         throw new Error("헤더 행이 비어있습니다.");
       }
-  
+
       // label → index 매핑
       const columnMapping = {};
       productConfig.fields.forEach((field) => {
         const index = headerRow.findIndex((cell) => cell === field.label);
         columnMapping[field.key] = index;
       });
-  
-      // 필수 필드 검증 (필요 시 required 속성 추가 후 검증 가능)
+
+      // 필수 필드 검증
       productConfig.fields.forEach((f) => {
         if (columnMapping[f.key] === -1 || columnMapping[f.key] === undefined) {
           console.warn(`헤더에 '${f.label}' 항목이 없습니다. (key: ${f.key})`);
         }
       });
-  
+
       const products = rows.slice(1).map((row) => {
         const product = {};
         productConfig.fields.forEach((field) => {
@@ -110,12 +119,12 @@ export const useProductManagement = () => {
         });
         return product;
       });
-  
+
       const response = await axios.post(`${API_BASE}/products/bulk`, { products });
       alert(response.data.message || "제품 일괄 업로드 완료!");
       setUploadError("");
       fetchProducts();
-  
+
       if (typeof closeModalCallback === "function") {
         closeModalCallback();
       }
@@ -124,7 +133,23 @@ export const useProductManagement = () => {
       setUploadError(error.message || "엑셀 파일 처리 중 오류가 발생했습니다.");
     }
   };
-  
+
+  // ✅ 파일 관련 기능 추가
+  const uploadProductFile = async (productId, file) => {
+    return await uploadFile("products", productId, file);
+  };
+
+  const fetchProductFiles = async (productId) => {
+    return await fetchFiles("products", productId);
+  };
+
+  const deleteProductFile = async (fileId) => {
+    return await deleteFile(fileId);
+  };
+
+  const downloadAllProductFiles = async (productId) => {
+    return await downloadAllFiles("products", productId);
+  };
 
   return {
     products,
@@ -135,5 +160,11 @@ export const useProductManagement = () => {
     downloadExcel,
     uploadError,
     fileInputRef,
+
+    // ✅ 파일 관련 함수 반환
+    uploadProductFile,
+    fetchProductFiles,
+    deleteProductFile,
+    downloadAllProductFiles,
   };
 };

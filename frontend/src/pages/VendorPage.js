@@ -8,7 +8,7 @@ import FileManageModal from "../modals/FileManageModal";
 import { DataTable } from "../components/DataTable";
 import { useVendorManagement } from "../hooks/useVendorManagement";
 import { vendorConfig } from "../api/config";
-import { uploadVendorFile } from "../api/vendorApi";
+
 
 function VendorPage() {
   const [showExcelModal, setShowExcelModal] = useState(false);
