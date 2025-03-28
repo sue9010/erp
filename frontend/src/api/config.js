@@ -109,10 +109,14 @@ export const quotationConfig = {
     { key: 'customer_name', label: '고객사', required: true },
     { key: 'quotation_date', label: '견적일', type: 'date', required: true },
     { key: 'due_date', label: '납기일', type: 'date', required: true },
-    { key: 'total_amount_ex_vat', label: '총 금액(VAT 미포함)', type: 'number', required: true },
-    { key: 'total_amount_inc_vat', label: '총 금액(VAT 포함)', type: 'number', required: true },
+    {
+      key: 'products',
+      label: '제품 구성',
+      type: 'custom', // 제품 + 옵션 + 단가 테이블 UI
+      required: true
+    },
     { key: 'note', label: '비고' },
-    { key: 'status', label: '상태' }
+    { key: 'status', label: '상태', default: '작성중' }
   ],
   searchFields: ['quotation_number', 'customer_name', 'note', 'status'],
   columns: [
@@ -121,14 +125,21 @@ export const quotationConfig = {
     { key: 'quotation_date', header: '견적일', align: 'center' },
     { key: 'due_date', header: '납기일', align: 'center' },
     {
+      key: 'total_amount_ex_vat',
+      header: '공급가액',
+      align: 'right',
+      format: (v) => `${(v ?? 0).toLocaleString()}원`,
+    },
+    {
       key: 'total_amount_inc_vat',
-      header: '총 금액(VAT 포함)',
+      header: '총액(VAT)',
       align: 'right',
       format: (v) => `${(v ?? 0).toLocaleString()}원`,
     },
     { key: 'status', header: '상태', align: 'center' }
   ]
 };
+
 
 export const paymentConfig = {
   title: "입금 목록",

@@ -1,3 +1,5 @@
+# backend/routers/quotations.py
+
 import os
 import io
 import re
@@ -16,11 +18,20 @@ router = APIRouter()
 UPLOAD_DIR = "uploaded_quotation_files"
 
 # --- 데이터 모델 ---
+class ProductItem(BaseModel):
+    product_name: str
+    quantity: int
+    unit_price: int
+    options: Optional[List["ProductItem"]] = []
+
+ProductItem.update_forward_refs()
+
 class Quotation(BaseModel):
     quotation_number: str
     customer_name: str
     quotation_date: date
     due_date: date
+    products: Optional[List[ProductItem]] = []
     total_amount_ex_vat: float
     total_amount_inc_vat: float
     note: Optional[str] = ""
@@ -37,8 +48,18 @@ quotations = [
         "customer_name": "삼성전자",
         "quotation_date": "2025-03-28",
         "due_date": "2025-04-10",
-        "total_amount_ex_vat": 1000000,
-        "total_amount_inc_vat": 1100000,
+        "products": [
+            {
+                "product_name": "열화상 카메라 모듈",
+                "quantity": 2,
+                "unit_price": 500000,
+                "options": [
+                    { "product_name": "M 12mm-motor", "quantity": 2, "unit_price": 25000 }
+                ]
+            }
+        ],
+        "total_amount_ex_vat": 1050000,
+        "total_amount_inc_vat": 1155000,
         "note": "납기 조율 필요",
         "status": "작성중"
     }

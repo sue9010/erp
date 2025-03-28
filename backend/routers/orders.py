@@ -14,14 +14,15 @@ from datetime import date
 from utils.file_store import register_file, get_files_by_entity, get_all_entity_files
 
 router = APIRouter()
-
 UPLOAD_DIR = "uploaded_order_files"
 
 # --- 데이터 모델 ---
 class ProductItem(BaseModel):
-    product_name: str
+    category: str
+    name: str
     quantity: int
-    options: Optional[List["ProductItem"]] = []  # 재귀적 구조
+    unit_price: int
+    options: Optional[List["ProductItem"]] = []
 
 ProductItem.update_forward_refs()
 
@@ -31,16 +32,16 @@ class Order(BaseModel):
     vendor_name: str
     order_date: date
     due_date: date
+    products: Optional[List[ProductItem]] = []
     total_amount_ex_vat: float
     total_amount_inc_vat: float
-    products: Optional[List[ProductItem]] = []  # ✅ 제품 + 옵션 구조 포함
     note: Optional[str] = ""
     status: Optional[str] = "접수"
 
 class BulkOrderCreate(BaseModel):
     orders: List[Order]
 
-# --- 데이터 저장소 (임시 메모리) ---
+# --- 임시 데이터 저장소 ---
 orders = [
     {
         "id": 1,
@@ -49,22 +50,31 @@ orders = [
         "vendor_name": "삼성전자",
         "order_date": "2025-03-27",
         "due_date": "2025-04-10",
-        "total_amount_ex_vat": 10000000,
-        "total_amount_inc_vat": 11000000,
         "products": [
             {
-                "product_name": "열화상 카메라 모듈",
+                "category": "카메라",
+                "name": "열화상 카메라 모듈",
                 "quantity": 3,
+                "unit_price": 500000,
                 "options": [
-                    { "product_name": "M 12mm-motor", "quantity": 3 }
+                    {
+                        "category": "렌즈",
+                        "name": "M 12mm-motor",
+                        "quantity": 3,
+                        "unit_price": 20000
+                    }
                 ]
             },
             {
-                "product_name": "렌즈 모듈",
+                "category": "렌즈",
+                "name": "렌즈 모듈",
                 "quantity": 2,
+                "unit_price": 150000,
                 "options": []
             }
         ],
+        "total_amount_ex_vat": 1890000,
+        "total_amount_inc_vat": 2079000,
         "note": "빠른 납기 요청",
         "status": "접수"
     }
@@ -86,11 +96,8 @@ def get_orders():
 def get_order_by_number(order_number: str):
     order = find_by_order_number(order_number)
     if not order:
-        raise HTTPException(status_code=404, detail="해당 주문이 존재하지 않습니다.")
-    return {
-        "order_number": order["order_number"],
-        "products": order.get("products", [])
-    }
+        raise HTTPException(status_code=404, detail="주문 없음")
+    return order
 
 @router.post("/orders")
 def add_order(order: Order):

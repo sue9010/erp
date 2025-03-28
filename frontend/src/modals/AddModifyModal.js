@@ -1,5 +1,4 @@
-// src/modals/AddModifyModal.js
-import React, { useEffect } from "react";
+import React from "react";
 import { Modal, Form, Button, Row, Col } from "react-bootstrap";
 
 export const AddModifyModal = ({
@@ -13,18 +12,18 @@ export const AddModifyModal = ({
 }) => {
   const handleChange = async (e) => {
     const { name, value } = e.target;
-    setProduct((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setProduct((prev) => ({ ...prev, [name]: value }));
 
     const field = config.fields.find((f) => f.key === name);
     if (field?.fetchDependent && fetchOrderItems) {
       const orderProducts = await fetchOrderItems(value);
+      console.log("✅ fetchOrderItems 결과:", orderProducts); // 이 줄 추가
+      
       const items = orderProducts.map((p) => ({
-        product_name: p.product_name,
+        product_name: p.product_name || `[${p.category}] ${p.name}`,
         serial_numbers: [],
       }));
+      console.log("✅ 최종 items:", items);
       setProduct((prev) => ({ ...prev, items }));
     }
   };
@@ -33,14 +32,23 @@ export const AddModifyModal = ({
     e.preventDefault();
     try {
       await handleSubmit(product);
+      // 성공 시에만 모달 닫기
       handleClose();
     } catch (error) {
       console.error("저장 실패:", error);
+      // 에러 메시지 alert
+      if (error.response?.data?.detail) {
+        alert(error.response.data.detail);
+      } else {
+        alert("생산 수정 중 오류가 발생했습니다.");
+      }
+      // 여기서 return 해서 모달을 안 닫고 유지
+      return;
     }
   };
+  
 
   const updateProducts = (updatedProducts) => {
-    // 자동 합계 계산
     const total = updatedProducts.reduce((sum, p) => {
       const prodTotal = (p.quantity || 0) * (p.unit_price || 0);
       const optTotal = (p.options || []).reduce(
@@ -61,7 +69,7 @@ export const AddModifyModal = ({
   const addProduct = () => {
     updateProducts([
       ...(product.products || []),
-      { product_name: "", quantity: 1, unit_price: 0, options: [] },
+      { category: "", name: "", quantity: 1, unit_price: 0, options: [] },
     ]);
   };
 
@@ -73,14 +81,15 @@ export const AddModifyModal = ({
 
   const updateProductField = (index, key, value) => {
     const updated = [...(product.products || [])];
-    updated[index][key] = key === "quantity" || key === "unit_price" ? parseFloat(value) : value;
+    updated[index][key] =
+      key === "quantity" || key === "unit_price" ? parseFloat(value) : value;
     updateProducts(updated);
   };
 
   const addOption = (productIndex) => {
     const updated = [...(product.products || [])];
     const options = updated[productIndex].options || [];
-    options.push({ product_name: "", quantity: 1, unit_price: 0 });
+    options.push({ category: "", name: "", quantity: 1, unit_price: 0 });
     updated[productIndex].options = options;
     updateProducts(updated);
   };
@@ -101,9 +110,7 @@ export const AddModifyModal = ({
   return (
     <Modal show={show} onHide={handleClose} size="lg" centered scrollable>
       <Modal.Header closeButton>
-        <Modal.Title>
-          {product.id ? `${config.title} 수정` : `${config.title} 등록`}
-        </Modal.Title>
+        <Modal.Title>{product.id ? `${config.title} 수정` : `${config.title} 등록`}</Modal.Title>
       </Modal.Header>
       <Form onSubmit={onSubmit}>
         <Modal.Body style={{ maxHeight: "70vh", overflowY: "auto" }}>
@@ -119,17 +126,20 @@ export const AddModifyModal = ({
                         as="textarea"
                         rows={2}
                         placeholder="쉼표 또는 줄바꿈으로 여러 개 입력 가능"
-                        value={(item.serial_numbers || []).join("\n")}
+                        value={(item.serial_input_text ?? item.serial_numbers?.join("\n") ?? "")}
                         onChange={(e) => {
+                          console.log("🖊️ raw input:", e.target.value);
                           const serials = e.target.value
                             .split(/[\n,]+/)
                             .map((s) => s.trim())
                             .filter((s) => s.length > 0);
+                          console.log("🔍 parsed serials:", serials);
+
                           const updated = [...(product.items || [])];
                           updated[index].serial_numbers = serials;
+                          updated[index].serial_input_text = e.target.value; // ✅ 여기 추가
                           setProduct((prev) => ({ ...prev, items: updated }));
                         }}
-                        required
                       />
                     </Form.Group>
                   ))}
@@ -146,9 +156,17 @@ export const AddModifyModal = ({
                       <Row className="mb-2 align-items-center">
                         <Col>
                           <Form.Control
+                            placeholder="카테고리"
+                            value={prod.category}
+                            onChange={(e) => updateProductField(i, "category", e.target.value)}
+                            required
+                          />
+                        </Col>
+                        <Col>
+                          <Form.Control
                             placeholder="제품명"
-                            value={prod.product_name}
-                            onChange={(e) => updateProductField(i, "product_name", e.target.value)}
+                            value={prod.name}
+                            onChange={(e) => updateProductField(i, "name", e.target.value)}
                             required
                           />
                         </Col>
@@ -186,11 +204,19 @@ export const AddModifyModal = ({
                         <Row key={j} className="mb-1 ps-4 align-items-center">
                           <Col>
                             <Form.Control
-                              placeholder="옵션명"
-                              value={opt.product_name}
+                              placeholder="옵션 카테고리"
+                              value={opt.category}
                               onChange={(e) =>
-                                updateOptionField(i, j, "product_name", e.target.value)
+                                updateOptionField(i, j, "category", e.target.value)
                               }
+                              required
+                            />
+                          </Col>
+                          <Col>
+                            <Form.Control
+                              placeholder="옵션명"
+                              value={opt.name}
+                              onChange={(e) => updateOptionField(i, j, "name", e.target.value)}
                               required
                             />
                           </Col>
@@ -233,7 +259,6 @@ export const AddModifyModal = ({
                     + 제품 추가
                   </Button>
 
-                  {/* 자동 계산된 금액 요약 */}
                   <div className="mt-3 text-end fw-bold">
                     <div>공급가액: {product.total_amount_ex_vat?.toLocaleString() || 0} 원</div>
                     <div>총액(VAT포함): {product.total_amount_inc_vat?.toLocaleString() || 0} 원</div>

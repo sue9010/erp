@@ -103,7 +103,9 @@ function ProductionPage() {
       <DataTable
         data={paginatedProductions}
         config={{ ...productionConfig, enableFile: true }}
-        onEdit={handleOpenAddModifyModal}
+        onEdit={(row) => { 
+          setCurrentProduction(row); 
+          setShowAddModifyModal(true); }}
         onDelete={handleDelete}
         onUploadClick={(row) => { setCurrentProduction(row); setShowFileUploadModal(true); }}
         onDownloadClick={(row) => { setCurrentProduction(row); setShowFileDownloadModal(true); }}
