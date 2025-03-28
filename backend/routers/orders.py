@@ -3,17 +3,17 @@ import io
 import re
 import zipfile
 import urllib.parse
-from uuid import uuid4
 from fastapi import APIRouter, HTTPException, UploadFile, File
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import date
 
+from utils.file_store import register_file, get_files_by_entity, get_all_entity_files
+
 router = APIRouter()
 
 UPLOAD_DIR = "uploaded_order_files"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # --- 데이터 모델 ---
 class Order(BaseModel):
@@ -45,8 +45,6 @@ orders = [
         "status": "접수"
     }
 ]
-
-uploaded_files = []
 
 # --- 유틸 함수 ---
 def get_max_id():
@@ -113,38 +111,15 @@ def upload_order_file(order_id: int, file: UploadFile = File(...)):
     if not order:
         raise HTTPException(status_code=404, detail="주문을 찾을 수 없습니다")
 
-    original_filename = file.filename
-    order_number = order["order_number"].replace(" ", "_")
-    sanitized_name = f"{order_number}_{original_filename}"
-    path = os.path.join(UPLOAD_DIR, sanitized_name)
-
-    with open(path, "wb") as f:
-        f.write(file.file.read())
-
-    file_id = str(uuid4())
-    uploaded_files.append({
-        "id": file_id,
-        "order_id": order_id,
-        "path": path,
-        "original_name": original_filename
-    })
-
-    return {"file_id": file_id, "original_name": original_filename}
+    return register_file("orders", order_id, file, UPLOAD_DIR)
 
 @router.get("/orders/{order_id}/files")
 def list_order_files(order_id: int):
-    files = [
-        {
-            "file_id": f["id"],
-            "original_name": f["original_name"]
-        }
-        for f in uploaded_files if f["order_id"] == order_id
-    ]
-    return files
+    return get_files_by_entity("orders", order_id)
 
 @router.get("/orders/{order_id}/files/download-all")
 def download_all_order_files(order_id: int):
-    matched_files = [f for f in uploaded_files if f["order_id"] == order_id]
+    matched_files = get_all_entity_files("orders", order_id)
     if not matched_files:
         raise HTTPException(status_code=404, detail="업로드된 파일이 없습니다.")
 
@@ -167,23 +142,3 @@ def download_all_order_files(order_id: int):
             "Content-Disposition": f"attachment; filename*=UTF-8''{encoded}"
         }
     )
-
-@router.get("/files/{file_id}")
-def download_file(file_id: str):
-    file_meta = next((f for f in uploaded_files if f["id"] == file_id), None)
-    if not file_meta:
-        raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
-    return FileResponse(path=file_meta["path"], filename=file_meta["original_name"])
-
-@router.delete("/files/{file_id}")
-def delete_file(file_id: str):
-    global uploaded_files
-    file_meta = next((f for f in uploaded_files if f["id"] == file_id), None)
-    if not file_meta:
-        raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
-    try:
-        os.remove(file_meta["path"])
-    except FileNotFoundError:
-        pass
-    uploaded_files = [f for f in uploaded_files if f["id"] != file_id]
-    return {"message": "파일이 삭제되었습니다"}

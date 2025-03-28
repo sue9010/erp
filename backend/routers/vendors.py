@@ -1,13 +1,12 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File
-from fastapi.responses import StreamingResponse, FileResponse  
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List
-import os, io, zipfile, re
-from uuid import uuid4
-import urllib.parse
+import os, io, zipfile, re, urllib.parse
+
+from utils.file_store import register_file, get_files_by_entity, get_all_entity_files
 
 router = APIRouter()
-
 
 # ==== 모델 정의 ====
 class Vendor(BaseModel):
@@ -45,9 +44,7 @@ vendors = [
     },
 ]
 
-uploaded_files = []  # [{id, vendor_id, path, original_name}]
 UPLOAD_DIR = "uploaded_vendor_files"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # ==== 기본 CRUD ====
 def get_max_id():
@@ -115,25 +112,9 @@ def upload_vendor_file(vendor_id: int, file: UploadFile = File(...)):
     if not vendor:
         raise HTTPException(status_code=404, detail="공급업체를 찾을 수 없습니다")
 
-    original_filename = file.filename
-    company_name = vendor["company_name"].replace(" ", "_")
-    sanitized_name = f"{company_name}_{original_filename}"
-    path = os.path.join(UPLOAD_DIR, sanitized_name)
-
-    with open(path, "wb") as f:
-        f.write(file.file.read())
-
-    file_id = str(uuid4())
-    uploaded_files.append({
-        "id": file_id,
-        "vendor_id": vendor_id,
-        "path": path,
-        "original_name": original_filename
-    })
-
-    vendor["file_id"] = file_id  # 마지막 업로드된 파일 기준
-
-    return {"file_id": file_id, "original_name": original_filename}
+    result = register_file("vendors", vendor_id, file, UPLOAD_DIR)
+    vendor["file_id"] = result["file_id"]
+    return result
 
 @router.get("/vendors/{vendor_id}/files")
 def list_vendor_files(vendor_id: int):
@@ -141,27 +122,22 @@ def list_vendor_files(vendor_id: int):
     if not vendor:
         raise HTTPException(status_code=404, detail="공급업체를 찾을 수 없습니다")
 
-    file_list = [
-        {
-            "file_id": f["id"],
-            "original_name": f["original_name"]
-        }
-        for f in uploaded_files if f["vendor_id"] == vendor_id
-    ]
-    return file_list
+    return get_files_by_entity("vendors", vendor_id)
 
 @router.get("/vendors/{vendor_id}/files/download-all")
 def download_all_vendor_files(vendor_id: int):
-    matched_files = [f for f in uploaded_files if f["vendor_id"] == vendor_id]
+    vendor = next((v for v in vendors if v["id"] == vendor_id), None)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="공급업체를 찾을 수 없습니다")
+
+    matched_files = get_all_entity_files("vendors", vendor_id)
     if not matched_files:
         raise HTTPException(status_code=404, detail="업로드된 파일이 없습니다.")
 
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
         for f in matched_files:
-            print(f"[🧾 파일 경로]: {f['path']}")
             if not os.path.exists(f["path"]):
-                print(f"[⚠️ 누락된 파일]: {f['path']}")
                 continue
             try:
                 zipf.write(f["path"], arcname=f["original_name"])
@@ -170,43 +146,14 @@ def download_all_vendor_files(vendor_id: int):
                 continue
 
     zip_buffer.seek(0)
-    vendor_name = next((v["company_name"] for v in vendors if v["id"] == vendor_id), "files")
-    safe_vendor_name = re.sub(r'[^a-zA-Z0-9가-힣_]', '_', vendor_name)
-    zip_filename = f"{safe_vendor_name}_첨부파일.zip"
-    encoded_filename = urllib.parse.quote(zip_filename)
+    safe_name = re.sub(r'[^a-zA-Z0-9가-힣_]', '_', vendor["company_name"])
+    zip_filename = f"{safe_name}_첨부파일.zip"
+    encoded = urllib.parse.quote(zip_filename)
 
-    try:
-        return StreamingResponse(
-            zip_buffer,
-            media_type="application/x-zip-compressed",
-            headers={
-                "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
-            }
-        )
-    except Exception as e:
-        print(f"[❌ ZIP 응답 실패]: {e}")
-        raise HTTPException(status_code=500, detail="ZIP 생성 또는 응답 실패")
-
-        
-@router.get("/files/{file_id}")
-def download_file(file_id: str):
-    file_meta = next((f for f in uploaded_files if f["id"] == file_id), None)
-    if not file_meta:
-        raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
-
-    return FileResponse(path=file_meta["path"], filename=file_meta["original_name"])
-
-@router.delete("/files/{file_id}")
-def delete_file(file_id: str):
-    global uploaded_files
-    file_meta = next((f for f in uploaded_files if f["id"] == file_id), None)
-    if not file_meta:
-        raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
-
-    try:
-        os.remove(file_meta["path"])
-    except FileNotFoundError:
-        pass  # 이미 삭제된 경우 무시
-
-    uploaded_files = [f for f in uploaded_files if f["id"] != file_id]
-    return {"message": "파일이 삭제되었습니다"}
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/x-zip-compressed",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded}"
+        }
+    )
