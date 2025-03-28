@@ -34,9 +34,11 @@ function OrderPage() {
 
   const flattenedOrders = useMemo(() => {
     const rows = [];
+    let rowIndex = 0;
     orders.forEach((order) => {
-      order.products?.forEach((product) => {
+      order.products?.forEach((product, pIndex) => {
         rows.push({
+          row_id: `order-${order.id}-product-${pIndex}`,
           ...order,
           category: product.category,
           name: product.name,
@@ -45,8 +47,9 @@ function OrderPage() {
           unit_price: product.unit_price,
           total_price: product.quantity * product.unit_price,
         });
-        product.options?.forEach((opt) => {
+        product.options?.forEach((opt, oIndex) => {
           rows.push({
+            row_id: `order-${order.id}-product-${pIndex}-option-${oIndex}`,
             ...order,
             category: opt.category,
             name: opt.name,
@@ -58,7 +61,7 @@ function OrderPage() {
         });
       });
     });
-
+  
     return rows
       .filter((row) =>
         orderConfig.searchFields.some((field) =>
@@ -67,6 +70,7 @@ function OrderPage() {
       )
       .sort((a, b) => b.id - a.id);
   }, [orders, searchTerm]);
+  
 
   const paginatedOrders = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -129,7 +133,9 @@ function OrderPage() {
         onUploadClick={(row) => { setCurrentOrder(row); setShowFileUploadModal(true); }}
         onDownloadClick={(row) => { setCurrentOrder(row); setShowFileDownloadModal(true); }}
         onManageClick={(row) => { setCurrentOrder(row); setShowFileManageModal(true); }}
+        keyField="row_id" // ✅ 이거 추가!
       />
+
 
       <div className="pagination-controls">
         <Button

@@ -85,9 +85,11 @@ function PurchaseOrderPage() {
           <li key={po.id}>
             {po.vendor} / {po.order_date}
             <ul>
-              {po.items.map((item, i) => (
-                <li key={i}>{item.product_name} / {item.quantity}개</li>
-              ))}
+            {po.items.map((item, i) => (
+              <li key={`${item.product_name}-${i}`}>
+                {item.product_name} / {item.quantity}개
+              </li>
+            ))}
             </ul>
           </li>
         ))}

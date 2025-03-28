@@ -17,7 +17,10 @@ export const DataTable = ({ data, config, onEdit, onDelete, onUploadClick, onDow
       </thead>
       <tbody>
         {data.map((item, index) => {
-          const rowKey = item.id || `${item.name}-${index}`;
+          const rowKey =
+            config.keyField && item[config.keyField]
+              ? item[config.keyField]
+              : item.id || `${item.name}-${index}`;
           return (
             <tr key={rowKey}>
               {config.columns.map((col) => (
