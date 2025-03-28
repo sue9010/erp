@@ -1,5 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Modal, Form, Button, Row, Col } from "react-bootstrap";
+import { Typeahead } from "react-bootstrap-typeahead";
+import 'react-bootstrap-typeahead/css/Typeahead.css';
+import axios from "axios";
+import { API_BASE } from "../api/config";
+import { v4 as uuidv4 } from 'uuid';
 
 export const AddModifyModal = ({
   show,
@@ -10,6 +15,17 @@ export const AddModifyModal = ({
   config,
   fetchOrderItems,
 }) => {
+  const [productList, setProductList] = useState([]);
+
+  useEffect(() => {
+    axios.get(`${API_BASE}/products`).then((res) => {
+      setProductList(res.data);
+    });
+  }, []);
+
+  const allCategories = [...new Set(productList.map((p) => p.category))];
+  const allNames = [...new Set(productList.map((p) => p.name))];
+
   const handleChange = async (e) => {
     const { name, value } = e.target;
     setProduct((prev) => ({ ...prev, [name]: value }));
@@ -17,13 +33,10 @@ export const AddModifyModal = ({
     const field = config.fields.find((f) => f.key === name);
     if (field?.fetchDependent && fetchOrderItems) {
       const orderProducts = await fetchOrderItems(value);
-      console.log("✅ fetchOrderItems 결과:", orderProducts); // 이 줄 추가
-      
       const items = orderProducts.map((p) => ({
         product_name: p.product_name || `[${p.category}] ${p.name}`,
         serial_numbers: [],
       }));
-      console.log("✅ 최종 items:", items);
       setProduct((prev) => ({ ...prev, items }));
     }
   };
@@ -32,21 +45,17 @@ export const AddModifyModal = ({
     e.preventDefault();
     try {
       await handleSubmit(product);
-      // 성공 시에만 모달 닫기
       handleClose();
     } catch (error) {
       console.error("저장 실패:", error);
-      // 에러 메시지 alert
       if (error.response?.data?.detail) {
         alert(error.response.data.detail);
       } else {
         alert("생산 수정 중 오류가 발생했습니다.");
       }
-      // 여기서 return 해서 모달을 안 닫고 유지
       return;
     }
   };
-  
 
   const updateProducts = (updatedProducts) => {
     const total = updatedProducts.reduce((sum, p) => {
@@ -119,27 +128,13 @@ export const AddModifyModal = ({
               return (
                 <div key="items" className="mt-3">
                   <h5>📦 생산 제품별 시리얼 번호 입력</h5>
-                  {product.items?.map((item, index) => (
-                    <Form.Group key={index} className="mb-3">
-                      <Form.Label>{item.product_name}</Form.Label>
+                  {product.items?.map(() => (
+                    <Form.Group key={`serial-${uuidv4()}`} className="mb-3">
+                      <Form.Label>제품명</Form.Label>
                       <Form.Control
                         as="textarea"
                         rows={2}
                         placeholder="쉼표 또는 줄바꿈으로 여러 개 입력 가능"
-                        value={(item.serial_input_text ?? item.serial_numbers?.join("\n") ?? "")}
-                        onChange={(e) => {
-                          console.log("🖊️ raw input:", e.target.value);
-                          const serials = e.target.value
-                            .split(/[\n,]+/)
-                            .map((s) => s.trim())
-                            .filter((s) => s.length > 0);
-                          console.log("🔍 parsed serials:", serials);
-
-                          const updated = [...(product.items || [])];
-                          updated[index].serial_numbers = serials;
-                          updated[index].serial_input_text = e.target.value; // ✅ 여기 추가
-                          setProduct((prev) => ({ ...prev, items: updated }));
-                        }}
                       />
                     </Form.Group>
                   ))}
@@ -152,22 +147,28 @@ export const AddModifyModal = ({
                 <div key="products" className="mt-3">
                   <h5>🧾 제품 구성</h5>
                   {(product.products || []).map((prod, i) => (
-                    <div key={i} className="mb-3 border rounded p-2">
+                    <div key={`product-${uuidv4()}`} className="mb-3 border rounded p-2">
                       <Row className="mb-2 align-items-center">
                         <Col>
-                          <Form.Control
-                            placeholder="카테고리"
-                            value={prod.category}
-                            onChange={(e) => updateProductField(i, "category", e.target.value)}
-                            required
+                          <Typeahead
+                            id={`category-${uuidv4()}`}
+                            options={allCategories}
+                            onChange={(selected) =>
+                              updateProductField(i, "category", selected[0] || "")
+                            }
+                            selected={prod.category ? [prod.category] : []}
+                            placeholder="카테고리 입력"
                           />
                         </Col>
                         <Col>
-                          <Form.Control
-                            placeholder="제품명"
-                            value={prod.name}
-                            onChange={(e) => updateProductField(i, "name", e.target.value)}
-                            required
+                          <Typeahead
+                            id={`name-${uuidv4()}`}
+                            options={prod.category ? productList.filter(p => p.category === prod.category).map(p => p.name) : allNames}
+                            onChange={(selected) =>
+                              updateProductField(i, "name", selected[0] || "")
+                            }
+                            selected={prod.name ? [prod.name] : []}
+                            placeholder="제품명 입력"
                           />
                         </Col>
                         <Col xs={2}>
@@ -199,25 +200,28 @@ export const AddModifyModal = ({
                           </Button>
                         </Col>
                       </Row>
-
                       {prod.options?.map((opt, j) => (
-                        <Row key={j} className="mb-1 ps-4 align-items-center">
+                        <Row key={`opt-${uuidv4()}`} className="mb-1 ps-4 align-items-center">
                           <Col>
-                            <Form.Control
-                              placeholder="옵션 카테고리"
-                              value={opt.category}
-                              onChange={(e) =>
-                                updateOptionField(i, j, "category", e.target.value)
+                            <Typeahead
+                              id={`opt-category-${uuidv4()}`}
+                              options={allCategories}
+                              onChange={(selected) =>
+                                updateOptionField(i, j, "category", selected[0] || "")
                               }
-                              required
+                              selected={opt.category ? [opt.category] : []}
+                              placeholder="옵션 카테고리 입력"
                             />
                           </Col>
                           <Col>
-                            <Form.Control
-                              placeholder="옵션명"
-                              value={opt.name}
-                              onChange={(e) => updateOptionField(i, j, "name", e.target.value)}
-                              required
+                            <Typeahead
+                              id={`opt-name-${uuidv4()}`}
+                              options={opt.category ? productList.filter(p => p.category === opt.category).map(p => p.name) : allNames}
+                              onChange={(selected) =>
+                                updateOptionField(i, j, "name", selected[0] || "")
+                              }
+                              selected={opt.name ? [opt.name] : []}
+                              placeholder="옵션명 입력"
                             />
                           </Col>
                           <Col xs={2}>
@@ -225,9 +229,7 @@ export const AddModifyModal = ({
                               type="number"
                               placeholder="수량"
                               value={opt.quantity}
-                              onChange={(e) =>
-                                updateOptionField(i, j, "quantity", e.target.value)
-                              }
+                              onChange={(e) => updateOptionField(i, j, "quantity", e.target.value)}
                               required
                             />
                           </Col>
@@ -236,9 +238,7 @@ export const AddModifyModal = ({
                               type="number"
                               placeholder="단가"
                               value={opt.unit_price}
-                              onChange={(e) =>
-                                updateOptionField(i, j, "unit_price", e.target.value)
-                              }
+                              onChange={(e) => updateOptionField(i, j, "unit_price", e.target.value)}
                               required
                             />
                           </Col>
